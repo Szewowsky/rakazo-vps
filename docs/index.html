@@ -615,6 +615,13 @@ ss -tlnp | grep 5173</pre>
 sed -i "s|^SIGNUP_ALLOWLIST=.*|SIGNUP_ALLOWLIST=|" .env
 docker compose --env-file .env -f docker-compose.images.yml up -d api worker web</pre>
       </div>
+      <p>Komunikat nie znika? Polityka rejestracji zapisała się w bazie przy pierwszym starcie i plik
+      <code class="inline">.env</code> przestał rządzić. Wyczyść ją bezpośrednio w bazie:</p>
+      <div class="codeblock">
+        <div class="codebar"><span>Serwer · terminal</span><button class="copy-btn" data-copy="cb-allow-db">Kopiuj</button></div>
+        <pre id="cb-allow-db">cd ~/rakazo
+docker exec rakazo-postgres-1 psql -U rakazo -d rakazo -c "update deployment_settings set \"signupAllowlist\"='' where id='default';"</pre>
+      </div>
       <p>Bezpieczeństwo bierze się tutaj nie z listy adresów, tylko z tego, że rejestracja jest otwarta
       przez kilka minut i wyłączona na stałe zaraz po tym, jak założysz konto.</p>
     </div>

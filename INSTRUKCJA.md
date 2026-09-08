@@ -385,6 +385,14 @@ sed -i "s|^SIGNUP_ALLOWLIST=.*|SIGNUP_ALLOWLIST=|" .env
 docker compose --env-file .env -f docker-compose.images.yml up -d api worker web
 ```
 
+Jeśli komunikat "Registration requires email delivery" nie znika, to znaczy, że polityka rejestracji
+zapisała się już w bazie przy pierwszym starcie i `.env` przestał rządzić. Wyczyść ją w bazie:
+
+```
+cd ~/rakazo
+docker exec rakazo-postgres-1 psql -U rakazo -d rakazo -c "update deployment_settings set \"signupAllowlist\"='' where id='default';"
+```
+
 Potem zarejestruj się jeszcze raz i **od razu** zamknij rejestrację (Krok 6).
 
 ### 2. Klucz Composio jest odrzucany, choć wygląda poprawnie
