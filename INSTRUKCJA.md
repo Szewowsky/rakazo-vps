@@ -295,6 +295,36 @@ Backup z Kroku 10 ich nie obejmuje, więc zapisz je sobie osobno.
 
 ---
 
+## Krok 7b (opcjonalnie): Podłącz aplikacje przez Composio
+
+**Po co?** Model to mózg. Żeby bot mógł zajrzeć do Twojego GitHuba, YouTube'a, Gmaila czy Notiona,
+potrzebuje integracji. Composio daje jeden darmowy klucz i katalog kilkuset aplikacji, do których
+logujesz się kliknięciem.
+
+1. Załóż konto na **dashboard.composio.dev**.
+2. **Przełącz tryb na PLATFORM** (przełącznik "Switch"; domyślnie jesteś w "FOR YOU"). Wybierz projekt.
+3. Project → API keys → Create API key. Klucz ma zaczynać się od **`ak_`**.
+4. W Rakazo: **Integrations** → dodaj źródło → **Composio** → wklej klucz → **Connect**.
+5. Wyszukaj aplikację (np. GitHub) → **Connect** → zaloguj się w oknie, które się otworzy.
+6. W ustawieniach bota zaznacz, z których integracji ma korzystać.
+
+Test: napisz do bota *"Wypisz moje ostatnie 3 repozytoria na GitHubie"* i porównaj z prawdą.
+
+Wolisz klucz w `.env` dla całej instalacji? Wpisz go w `COMPOSIO_API_KEY=` i zrestartuj `api` i `worker`
+(komenda z Kroku 4). Sprawdź bez wyświetlania klucza:
+
+```bash
+grep -c '^COMPOSIO_API_KEY=ak_' ~/rakazo/.env    # oczekiwane: 1
+```
+
+⚠️ Klucz **`ck_`** wygląda tak samo jak `ak_` i nie zadziała - to najczęstsza wpadka (patrz
+"Coś poszło nie tak?", punkt 2).
+
+⚠️ Połączenia są **wspólne dla całej instalacji**: każdy bot z włączoną integracją działa na Twoim
+koncie. Nie dawaj botom aplikacji "na zapas".
+
+---
+
 ## Krok 8: Sprawdź komputer bota
 
 **Po co?** To jest ta część, dla której się w to bawimy - bot ma swój pulpit z przeglądarką.
@@ -407,7 +437,7 @@ klucza z trybu **PLATFORM**, zaczynającego się od `ak_`. Klucz `ck_` pochodzi 
 i nie zadziała, ile razy byś go nie wkleił.
 
 **Co robisz:** w panelu Composio przełącz się na tryb PLATFORM i wygeneruj klucz stamtąd.
-Weryfikacja to spojrzenie na dwa pierwsze znaki.
+Weryfikacja to spojrzenie na dwa pierwsze znaki. Pełna ścieżka: Krok 7b.
 
 ### 3. Bot przy każdym ruchu prosi o zgodę, rutyny nie robią nic
 

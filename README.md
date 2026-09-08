@@ -16,7 +16,7 @@ Wróć, gdy audyt z tamtego repo świeci na zielono.
 
 ## Co dostajesz?
 
-- **Wizard dla Claude Code** - 10 faz (F0-F9), każda z komendą, oczekiwanym wynikiem, testem zaliczenia i planem B
+- **Wizard dla Claude Code** - 10 faz (F0-F9, plus opcjonalna F6b: aplikacje przez Composio), każda z komendą, oczekiwanym wynikiem, testem zaliczenia i planem B
 - **Skrypt audytu** - `scripts/check.sh` sprawdza serwer PRZED i PO instalacji, PASS/WARN/FAIL per punkt
 - **Instrukcja tekstowa** - `INSTRUKCJA.md` dla tych, którzy wolą kopiować komendy ręcznie
 
@@ -84,6 +84,7 @@ ssh twoj_user@TWOJE_IP "bash /tmp/check.sh --before"
 | F4 | TLS: Caddy + smoke test API | `https://twoja-domena/api/auth/ok` zwraca `{"ok":true}` |
 | F5 | Pierwsze konto (owner) + zamknięcie rejestracji | drugi mail dostaje "Registration is closed" |
 | F6 | Podpięcie modelu (OpenRouter albo OAuth) | bot odpowiada na wiadomość |
+| F6b | Aplikacje przez Composio (opcjonalnie) | katalog się ładuje, jedna aplikacja Connected, bot zwraca prawdziwe dane |
 | F7 | Test komputera bota | bot otwiera stronę w przeglądarce, widać pulpit |
 | F8 | Pierwszy bot z rutyną | rutyna wykonuje się o czasie |
 | F9 | Backup i aktualizacje | backup odtwarza się na czysto |

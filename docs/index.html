@@ -280,6 +280,9 @@
       <li><strong>Konto do modelu.</strong> Najprościej <strong>OpenRouter</strong> (klucz API, płacisz
       za zużycie). Alternatywnie logujesz się w panelu Rakazo swoim kontem ChatGPT/Codex przez OAuth
       i nie podajesz żadnego klucza.</li>
+      <li><strong>Opcjonalnie: konto Composio.</strong> Darmowy klucz, przez który bot dostaje dostęp
+      do GitHuba, YouTube'a, Gmaila i reszty. Nie jest potrzebny do instalacji - dorobisz go w każdej
+      chwili (faza F6b).</li>
     </ul>
     <div class="warn">
       <span class="ico">⚠️</span>
@@ -406,6 +409,16 @@ zestawienie: co było na czerwono, a co jest teraz na zielono.</pre>
         <p>Albo klucz OpenRouter, albo logowanie OAuth kontem dostawcy - w obu wypadkach wklejasz go sam,
         w panelu, żeby nie przechodził przez czat. Agent zapyta, którą drogę wybierasz, i sprawdzi, czy
         model odpowiada.</p></div>
+      </div>
+      <div class="flow-item">
+        <div class="flow-num">F6b</div>
+        <div><h4>Aplikacje przez Composio <span class="decyzja">Opcjonalnie</span></h4>
+        <p>Model to mózg, integracje to ręce. Jeden darmowy klucz Composio (koniecznie z trybu
+        PLATFORM, prefiks <code class="inline">ak_</code>) wklejasz sam w panelu Rakazo w zakładce
+        Integrations, a potem łączysz aplikacje - GitHub, YouTube, Gmail, Notion - logowaniem OAuth
+        w oknie, które się otworzy. Połączenia są wspólne dla całej instalacji, więc bot dostaje
+        tylko te, które mu włączysz. Agent nie widzi klucza; sprawdza tylko, czy katalog aplikacji
+        się ładuje i czy bot zwraca prawdziwe dane. Szczegóły: <a href="#p-composio">potknięcie 02</a>.</p></div>
       </div>
       <div class="flow-item">
         <div class="flow-num">F7</div>
@@ -636,8 +649,10 @@ docker exec rakazo-postgres-1 psql -U rakazo -d rakazo -c "update deployment_set
       Rakazo potrzebuje klucza zaczynającego się od <code class="inline">ak_</code> - tego z trybu
       PLATFORM. Klucz zaczynający się od <code class="inline">ck_</code> jest z innego trybu i nie zadziała,
       niezależnie od tego, ile razy go wkleisz.</p>
-      <p><strong>Co robisz:</strong> wróć do panelu Composio, przełącz się na tryb PLATFORM i wygeneruj
-      klucz stamtąd. Sprawdzenie zajmuje sekundę - patrzysz na dwa pierwsze znaki.</p>
+      <p><strong>Co robisz:</strong> wróć do panelu Composio, przełącz się na tryb PLATFORM (przełącznik
+      "Switch" w panelu, potem projekt → API keys → Create API key) i wygeneruj klucz stamtąd. Sprawdzenie
+      zajmuje sekundę - patrzysz na dwa pierwsze znaki. Klucz wklejasz w Rakazo w zakładce Integrations
+      (źródło Composio → API key → Connect), nie w czacie z agentem.</p>
     </div>
     </details>
 

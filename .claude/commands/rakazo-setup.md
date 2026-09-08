@@ -52,7 +52,7 @@ F4c, F4d) buduj heredokiem `cat > /tmp/xxx.sh <<'EOS' ... EOS`, nigdy `printf` a
 6. **ZAWSZE czekaj na wynik komendy** przed następną. Nie łącz faz. Nie zgaduj, że coś się udało.
 7. **Jeśli test fazy nie przechodzi - STOP.** Pokaż output, zapytaj użytkownika.
    Nie naprawiaj na ślepo, nie restartuj wszystkiego "na wszelki wypadek".
-8. **Klucze API (OpenRouter itd.) wpisuje użytkownik**, najlepiej w UI po zalogowaniu.
+8. **Klucze API (OpenRouter, Composio itd.) wpisuje użytkownik**, najlepiej w UI po zalogowaniu.
    Jeśli musi trafić do `.env` - użytkownik wkleja go sam na serwerze, nie przez czat.
 
 ## Nazewnictwo w komendach
@@ -557,6 +557,67 @@ w Settings → Models. Bez klucza w plikach.
 
 ---
 
+## Faza 6b - Aplikacje przez Composio (opcjonalnie)
+
+Bot z samym modelem umie tylko rozmawiać i klikać po przeglądarce. Dostęp do konkretnych usług
+(GitHub, YouTube, Gmail, Notion, Slack...) dostaje przez **integracje**. Najprostsza droga to
+**Composio**: jeden darmowy klucz, katalog kilkuset aplikacji, logowanie OAuth do każdej z nich
+klikaniem w panelu Rakazo. **Zapytaj użytkownika, czy chce to teraz.** Jeśli nie - przejdź do Fazy 7,
+to można dorobić w każdej chwili.
+
+**Krok 1 - klucz (robi użytkownik, poza czatem):**
+
+1. Konto na https://dashboard.composio.dev (darmowy plan wystarcza na start).
+2. **Przełącz tryb na PLATFORM** (przełącznik "Switch" w panelu Composio; domyślny tryb to
+   "FOR YOU"). Wybierz albo utwórz projekt.
+3. Project → API keys → Create API key. Poprawny klucz zaczyna się od **`ak_`**.
+   Klucz **`ck_`** z trybu FOR YOU wygląda tak samo i **nie zadziała** w Rakazo.
+
+**Krok 2 - wpięcie klucza. Dwie drogi, wybór należy do użytkownika:**
+
+**A. W UI (zalecane, bez restartu):** Rakazo → **Integrations** (ikona wtyczek/integracji w panelu)
+→ dodaj źródło → wybierz **Composio** → pole **API key** → **Connect**. Klucz zostaje zaszyfrowany
+w bazie (`ENCRYPTION_KEY`), nie przechodzi przez czat ani przez pliki.
+
+**B. W `.env` (dla całego deploymentu):** użytkownik wpisuje sam, na serwerze, w swoim terminalu:
+
+```bash
+nano ~/rakazo/.env      # znajdź COMPOSIO_API_KEY= i wklej wartość ak_...
+cd ~/rakazo && docker compose --env-file .env -f docker-compose.images.yml up -d api worker
+```
+
+Po drodze B sprawdź, czy klucz jest i ma dobry prefiks - **bez wyświetlania go**:
+
+```bash
+ssh -p PORT USER@IP "grep -c '^COMPOSIO_API_KEY=ak_' ~/rakazo/.env"
+```
+
+Oczekiwane: `1`. Wynik `0` = brak klucza albo prefiks `ck_` (patrz Krok 1).
+
+**Krok 3 - pierwsza aplikacja:** w Integrations wyszukaj aplikację (np. GitHub) → **Connect**.
+Otworzy się okno OAuth dostawcy, użytkownik loguje się **sam**. Po powrocie aplikacja ma status
+"Connected". Następnie w ustawieniach bota zaznacz, z których integracji ma korzystać.
+
+**Test zaliczenia:** katalog aplikacji w Integrations się ładuje (nie ma komunikatu
+"Could not load integrations"), jedna aplikacja ma status Connected, a bot poproszony np.
+*"Wypisz moje ostatnie 3 repozytoria na GitHubie"* zwraca prawdziwe dane.
+
+**FAIL - co zrobić:**
+- katalog nie ładuje się / klucz odrzucony → prawie zawsze prefiks `ck_` zamiast `ak_`.
+  Nowy klucz z trybu PLATFORM. Przy drodze B: po zmianie `.env` restart `api` i `worker`.
+- okno OAuth wraca z błędem → w Composio sprawdź, czy dana aplikacja ma włączoną domyślną
+  konfigurację auth (dla popularnych aplikacji jest gotowa; dla własnego OAuth app trzeba
+  wpisać client ID/secret po stronie Composio, nie w Rakazo).
+- bot "nie widzi" integracji → połączenie jest na poziomie całej przestrzeni roboczej, ale bot
+  musi mieć je zaznaczone w swoich ustawieniach. Sprawdź to przed grzebaniem w kluczach.
+- `docker logs rakazo-api-1 --tail 60 | grep -i composio` pokaże 401/403 z Composio.
+
+**Uwaga o zakresie:** połączenia Composio są **wspólne dla całej instalacji** - każdy bot, któremu
+je włączysz, działa na tym samym koncie GitHub/YouTube co Ty. Nie łącz konta z aplikacjami,
+których bot nie potrzebuje, i nie dawaj botowi integracji "na zapas".
+
+---
+
 ## Faza 7 - Test komputera bota
 
 Każdy bot ma własny kontener z pulpitem, przeglądarką i terminalem. Kontener **startuje dopiero
@@ -697,6 +758,7 @@ Podsumowanie na koniec:
 - Kontenery: postgres, supervisor, api, worker, web
 - Na świat wystawione: tylko 80/443 (Caddy) + port SSH
 - Komputery botów: lokalne (Docker), pauza po 10 min bezczynności
+- Integracje: Composio (jeśli F6b) - połączone aplikacje: ...
 - Backup: `~/backups/rakazo-<data>/`
 - Aktualizacja: `pull` + `up -d --wait` z katalogu `~/rakazo`
 
