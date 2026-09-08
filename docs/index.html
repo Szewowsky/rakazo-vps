@@ -1,0 +1,880 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rakazo na własnym VPS · poradnik po odcinku</title>
+<meta name="description" content="Jedna wklejka do Claude Code i agent stawia Ci na serwerze zespół botów AI z własnym komputerem. Rakazo self-hosted, TLS, zamknięta rejestracja, pierwszy bot i rutyna.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🤖</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300..800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#1A192C;
+    --bg-2:#211F38;
+    --bg-3:#141322;
+    --ink:#EDEAF6;
+    --ink-dim:#A9A4C2;
+    --line:#312E4C;
+    --orange:#F39F06;
+    --orange-soft:rgba(243,159,6,.12);
+    --green:#4ADE80;
+    --red:#F87171;
+    --yellow:#FACC15;
+    --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+    --disp:'Bricolage Grotesque','Instrument Sans',sans-serif;
+    --body:'Instrument Sans',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--bg);color:var(--ink);font-family:var(--body);
+    font-size:17px;line-height:1.65;-webkit-font-smoothing:antialiased;
+    background-image:
+      radial-gradient(1200px 500px at 80% -10%, rgba(243,159,6,.07), transparent 60%),
+      radial-gradient(900px 500px at -10% 30%, rgba(122,90,248,.08), transparent 55%);
+  }
+  ::selection{background:var(--orange);color:var(--bg)}
+  .wrap{max-width:860px;margin:0 auto;padding:0 24px}
+  a{color:var(--orange);text-decoration:none;border-bottom:1px solid rgba(243,159,6,.35)}
+  a:hover{border-bottom-color:var(--orange)}
+  code.inline{font-family:var(--mono);font-size:13.5px;color:var(--orange);
+    background:rgba(243,159,6,.08);padding:2px 7px;border-radius:6px}
+
+  /* HERO */
+  header{padding:72px 0 40px;border-bottom:1px solid var(--line)}
+  .kicker{
+    font-family:var(--mono);font-size:12px;letter-spacing:.22em;text-transform:uppercase;
+    color:var(--orange);display:flex;align-items:center;gap:12px;margin-bottom:22px;
+  }
+  .kicker::before{content:"";display:inline-block;width:34px;height:2px;background:var(--orange)}
+  h1{
+    font-family:var(--disp);font-weight:750;font-size:clamp(34px,6vw,58px);
+    line-height:1.04;letter-spacing:-.02em;margin-bottom:20px;
+  }
+  h1 em{font-style:normal;color:var(--orange)}
+  .lede{font-size:clamp(17px,2.2vw,20px);color:var(--ink-dim);max-width:640px}
+  .lede strong{color:var(--ink);font-weight:600}
+  .hero-meta{
+    display:flex;flex-wrap:wrap;gap:10px;margin-top:28px;font-family:var(--mono);font-size:12.5px;
+  }
+  .chip{
+    border:1px solid var(--line);border-radius:999px;padding:6px 14px;color:var(--ink-dim);
+    background:rgba(255,255,255,.02)
+  }
+  .chip b{color:var(--green);font-weight:600}
+
+  /* SECTIONS */
+  section{padding:56px 0;border-bottom:1px solid var(--line)}
+  .step-tag{
+    font-family:var(--mono);font-size:13px;color:var(--orange);letter-spacing:.14em;margin-bottom:10px;
+  }
+  h2{
+    font-family:var(--disp);font-weight:700;font-size:clamp(24px,3.6vw,34px);
+    letter-spacing:-.015em;line-height:1.15;margin-bottom:16px;
+  }
+  h3{font-family:var(--disp);font-weight:650;font-size:19px;margin:26px 0 8px}
+  p{margin-bottom:14px;color:var(--ink-dim)}
+  p strong,li strong{color:var(--ink);font-weight:600}
+  ul.plain{list-style:none;margin:18px 0}
+  ul.plain li{
+    padding:10px 0 10px 30px;position:relative;color:var(--ink-dim);border-top:1px dashed var(--line)
+  }
+  ul.plain li:last-child{border-bottom:1px dashed var(--line)}
+  ul.plain li::before{content:"›";position:absolute;left:6px;color:var(--orange);font-family:var(--mono)}
+
+  /* CODE / TERMINAL */
+  .codeblock{
+    position:relative;margin:20px 0;border:1px solid var(--line);border-radius:12px;
+    background:var(--bg-3);overflow:hidden;
+  }
+  .codebar{
+    display:flex;justify-content:space-between;align-items:center;gap:12px;
+    padding:9px 14px;border-bottom:1px solid var(--line);
+    font-family:var(--mono);font-size:11.5px;letter-spacing:.1em;color:var(--ink-dim);
+    text-transform:uppercase;background:rgba(255,255,255,.02)
+  }
+  .copy-btn{
+    font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;cursor:pointer;
+    background:var(--orange);color:#1A192C;border:0;border-radius:7px;padding:6px 14px;
+    font-weight:600;transition:transform .08s ease, background .15s;
+  }
+  .copy-btn:hover{background:#ffb42a}
+  .copy-btn:active{transform:scale(.96)}
+  .copy-btn.done{background:var(--green)}
+  pre{
+    padding:18px 18px 20px;overflow-x:auto;font-family:var(--mono);
+    font-size:13.5px;line-height:1.7;color:#DCD8EE;white-space:pre-wrap;word-break:break-word;
+  }
+  .term pre{white-space:pre;word-break:normal}
+  .t-pass{color:var(--green)}
+  .t-fail{color:var(--red)}
+  .t-warn{color:var(--yellow)}
+  .t-dim{color:#6E6990}
+  .t-orange{color:var(--orange)}
+
+  /* CALLOUTS */
+  .warn{
+    display:flex;gap:14px;margin:22px 0;padding:16px 18px;border-radius:12px;
+    background:rgba(248,113,113,.07);border:1px solid rgba(248,113,113,.3);
+  }
+  .warn .ico{font-size:20px;line-height:1.4}
+  .warn p{margin:0;color:var(--ink)}
+  .note{
+    margin:22px 0;padding:16px 18px;border-radius:12px;
+    background:var(--orange-soft);border:1px solid rgba(243,159,6,.3);
+  }
+  .note p{margin:0;color:var(--ink)}
+
+  /* TIMELINE */
+  .flow{margin:26px 0;display:grid;gap:0}
+  .flow-item{
+    display:grid;grid-template-columns:56px 1fr;gap:16px;padding:16px 0;
+    border-top:1px dashed var(--line)
+  }
+  .flow-item:last-child{border-bottom:1px dashed var(--line)}
+  .flow-num{
+    font-family:var(--mono);font-size:13px;color:var(--orange);
+    border:1px solid var(--line);border-radius:10px;height:40px;width:56px;
+    display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.02)
+  }
+  .flow-item h4{font-family:var(--disp);font-size:16.5px;font-weight:650;margin-bottom:3px}
+  .flow-item p{margin:0;font-size:15.5px}
+  .decyzja{
+    display:inline-block;margin-left:8px;font-family:var(--mono);font-size:10px;letter-spacing:.1em;
+    color:var(--orange);border:1px solid rgba(243,159,6,.45);border-radius:999px;padding:2px 8px;
+    background:var(--orange-soft);vertical-align:middle;text-transform:uppercase;
+  }
+
+  /* TABELA PRZED/PO */
+  .tabela-wrap{overflow-x:auto;margin:22px 0;border:1px solid var(--line);border-radius:12px}
+  table{border-collapse:collapse;width:100%;min-width:560px;font-size:15px}
+  thead th{
+    font-family:var(--mono);font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--ink-dim);text-align:left;padding:12px 16px;border-bottom:1px solid var(--line);
+    background:rgba(255,255,255,.02);font-weight:600;
+  }
+  tbody td{padding:12px 16px;border-top:1px dashed var(--line);color:var(--ink-dim);vertical-align:top}
+  tbody td:first-child{color:var(--ink)}
+  tbody td.stan{font-family:var(--mono);font-size:12.5px;white-space:nowrap}
+
+  /* AKORDEONY */
+  .droga{
+    border:1px solid var(--line);border-radius:14px;background:var(--bg-2);
+    margin:14px 0;overflow:hidden;
+  }
+  .droga.pick{border-color:rgba(243,159,6,.5)}
+  .droga summary{
+    cursor:pointer;list-style:none;display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+    padding:18px 20px;font-family:var(--disp);font-weight:650;font-size:17.5px;
+    user-select:none;transition:background .15s;
+  }
+  .droga summary::-webkit-details-marker{display:none}
+  .droga summary:hover{background:rgba(255,255,255,.03)}
+  .droga summary::after{
+    content:"+";margin-left:auto;font-family:var(--mono);font-size:20px;color:var(--orange);
+    transition:transform .2s;flex-shrink:0;
+  }
+  .droga[open] summary::after{transform:rotate(45deg)}
+  .droga .d-num{
+    font-family:var(--mono);font-size:12.5px;color:var(--orange);
+    border:1px solid var(--line);border-radius:8px;padding:4px 10px;background:rgba(255,255,255,.02);
+    flex-shrink:0;
+  }
+  .droga .d-body{padding:4px 20px 20px;border-top:1px dashed var(--line)}
+
+  /* HERO ACTIONS */
+  .hero-actions{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:26px}
+  .md-btn{font-size:13px;padding:11px 18px;border-radius:10px}
+  .md-hint{font-size:13.5px;color:var(--ink-dim);max-width:420px}
+
+  /* CTA */
+  .cta-line{
+    margin-top:22px;padding:12px 16px;border:1px dashed rgba(243,159,6,.4);border-radius:12px;
+    font-size:14.5px;color:var(--ink-dim);background:rgba(243,159,6,.05);max-width:640px;
+  }
+  .code-pill{
+    font-family:var(--mono);font-size:12.5px;font-weight:600;color:var(--orange);
+    background:rgba(243,159,6,.1);border:1px solid rgba(243,159,6,.35);
+    border-radius:6px;padding:2px 8px;letter-spacing:.06em;
+  }
+  .cta-box{
+    display:flex;align-items:center;justify-content:space-between;gap:26px;flex-wrap:wrap;
+    border:1px solid rgba(243,159,6,.4);border-radius:16px;padding:26px 28px;
+    background:linear-gradient(135deg, rgba(243,159,6,.09), rgba(243,159,6,.02) 60%);
+  }
+  .cta-box p{font-size:15px;max-width:560px}
+  .cta-btn{
+    flex-shrink:0;font-family:var(--disp);font-weight:650;font-size:16px;
+    background:var(--orange);color:#1A192C;border-radius:12px;padding:14px 26px;
+    border-bottom:none;transition:background .15s, transform .08s;
+  }
+  .cta-btn:hover{background:#ffb42a}
+  .cta-btn:active{transform:scale(.97)}
+
+  /* FOOTER */
+  footer{padding:48px 0 64px}
+  footer h2{font-size:clamp(20px,2.6vw,26px);margin-bottom:14px}
+  footer .links{display:flex;flex-wrap:wrap;gap:18px;margin-bottom:22px;font-size:15px}
+  footer p{font-size:13.5px;color:var(--ink-dim)}
+
+  @media (max-width:560px){
+    header{padding:52px 0 34px}
+    section{padding:44px 0}
+    .flow-item{grid-template-columns:44px 1fr;gap:12px}
+    .flow-num{width:44px;height:36px}
+  }
+</style>
+</head>
+<body>
+
+<header id="hero">
+  <div class="wrap">
+    <div class="kicker">Poradnik po odcinku</div>
+    <h1>Własny zespół botów AI.<br><em>Na Twoim serwerze.</em></h1>
+    <p class="lede"><strong>Rakazo</strong> to open-source'owy odpowiednik agentów, które siedzą i pracują
+    za Ciebie w tle: każdy bot ma pamięć, własne rutyny i <strong>własny komputer</strong> - kontener
+    z pulpitem, przeglądarką i terminalem, w którym sam klika. Model podpinasz swój. Wszystko stoi na
+    Twoim VPS-ie, a nie w cudzej chmurze.</p>
+    <p class="lede" style="margin-top:14px">Zamiast wykładu o Dockerze dostajesz <strong>jedną wklejkę
+    do Claude Code</strong>. Agent instaluje, wystawia adres po HTTPS, zamyka rejestrację i pokazuje
+    Ci działającego bota. Ty tylko potwierdzasz i podajesz trzy rzeczy: domenę, model i e-mail.</p>
+    <div class="hero-meta">
+      <span class="chip">⏱ ok. 30 minut</span>
+      <span class="chip">🧑‍💻 zero programowania</span>
+      <span class="chip"><b>10 faz</b> robi agent</span>
+      <span class="chip">🔓 open source · Apache 2.0</span>
+    </div>
+    <div class="hero-actions">
+      <button class="copy-btn md-btn" data-copy="cb-prompt">📋 Kopiuj prompt dla agenta</button>
+      <span class="md-hint">Nie chcesz czytać? Zjedź do Kroku 2, skopiuj prompt i wklej go w Claude Code.</span>
+    </div>
+    <div class="cta-line">
+      Nie masz jeszcze serwera? Ja korzystam z VPS-ów od <a href="https://hostinger.com/robertclaude">Hostingera</a>
+      (partner technologiczny kanału) - kod <span class="code-pill">ROBERTHOST</span> daje dodatkowy rabat.
+    </div>
+  </div>
+</header>
+
+<section id="zanim">
+  <div class="wrap">
+    <div class="step-tag">ZANIM ZACZNIESZ</div>
+    <h2>Czego potrzebujesz</h2>
+    <ul class="plain">
+      <li><strong>VPS z Ubuntu 24.04.</strong> Minimum <strong>2 vCPU i 4 GB RAM</strong>, ale komfortowo
+      robi się dopiero od <strong>8 GB</strong>. Zmierzone na czystej instalacji: sam stack bez ani jednego
+      bota zajmuje <strong>ok. 1,8 GB</strong> RAM i 8 GB dysku, a każdy aktywny komputer bota dokłada
+      1-2 GB. Na 4 GB uruchomisz jednego bota naraz, na 8 GB dwóch, trzech - i możesz podnieść sufit
+      pamięci pojedynczego komputera z domyślnych 2 GB do 4 GB, żeby Chromium nie ginął w środku zadania.</li>
+      <li><strong>Zabezpieczony serwer - to jest krok zero.</strong> Rakazo wystawia panel do internetu,
+      więc świeżej maszyny z rootem na haśle po prostu nie stawiaj pod publiczny adres. Przejdź najpierw
+      <a href="https://szewowsky.github.io/vps-security/">poradnik vps-security</a> (u mnie zajął
+      <strong>ok. 9 minut</strong>, też jedną wklejką): użytkownik zamiast roota, SSH na klucz, firewall,
+      fail2ban.</li>
+      <li><strong>Domena albo subdomena wskazująca na serwer.</strong> Rekord <code class="inline">A</code>
+      typu <code class="inline">rakazo.twojadomena.pl</code> → adres IP VPS-a. Bez tego nie będzie HTTPS,
+      a bez HTTPS aplikacje desktopowa i mobilna się nie zalogują.</li>
+      <li><strong>Claude Code na Twoim komputerze.</strong> Agent działa lokalnie i to on łączy się
+      z serwerem po SSH.</li>
+      <li><strong>Konto do modelu.</strong> Najprościej <strong>OpenRouter</strong> (klucz API, płacisz
+      za zużycie). Alternatywnie logujesz się w panelu Rakazo swoim kontem ChatGPT/Codex przez OAuth
+      i nie podajesz żadnego klucza.</li>
+    </ul>
+    <div class="warn">
+      <span class="ico">⚠️</span>
+      <p><strong>Jedna żelazna zasada:</strong> przez cały proces trzymaj otwarte drugie okno terminala
+      zalogowane na serwer. Wizard nie dotyka SSH ani firewalla, ale instalacja Dockera i restart usług
+      to moment, w którym zapasowe drzwi zawsze się przydają.</p>
+    </div>
+    <div class="note">
+      <p><strong>Ile to potrwa?</strong> Sama instalacja Rakazo to u mnie <strong>ok. 7 minut</strong>
+      od pierwszej komendy do działającego adresu HTTPS - z czego <strong>2-3 minuty</strong> to samo
+      pobieranie obrazów (6,8 GB). Doliczy się do tego czas na Twoje decyzje i, jeśli serwer nie jest
+      jeszcze zabezpieczony, kwadrans na krok zero.</p>
+    </div>
+    <div class="note">
+      <p><strong>Ile to kosztuje?</strong> Samo Rakazo jest darmowe (open source, licencja Apache 2.0,
+      repozytorium <a href="https://github.com/elie222/rakazo">elie222/rakazo</a>). Płacisz tylko za
+      serwer i za tokeny modelu, który podepniesz. Nie ma tu żadnej subskrypcji pośrednika.</p>
+    </div>
+  </div>
+</section>
+
+<section id="krok-1">
+  <div class="wrap">
+    <div class="step-tag">KROK 1 / 3</div>
+    <h2>Otwórz Claude Code w pustym folderze</h2>
+    <p>Nowy folder, żeby agent miał czyste biurko. Wpisz w terminalu na <strong>swoim komputerze</strong>
+    (nie na serwerze):</p>
+    <div class="codeblock">
+      <div class="codebar"><span>Twój komputer · terminal</span><button class="copy-btn" data-copy="cb1">Kopiuj</button></div>
+      <pre id="cb1">mkdir rakazo-vps && cd rakazo-vps && claude</pre>
+    </div>
+    <p>Po chwili patrzysz na okno rozmowy z agentem. To wszystko, co musisz umieć z terminala.</p>
+    <div class="note">
+      <p><strong>Pracujesz w aplikacji desktopowej Claude Code?</strong> Terminal nie jest Ci w ogóle
+      potrzebny: utwórz pusty folder w Finderze albo Eksploratorze, otwórz go w apce jako nową sesję
+      lokalną i przejdź od razu do Kroku 2.</p>
+    </div>
+  </div>
+</section>
+
+<section id="krok-2">
+  <div class="wrap">
+    <div class="step-tag">KROK 2 / 3</div>
+    <h2>Wklej agentowi ten prompt</h2>
+    <p>Całość, jednym wklejeniem. W prompcie jest wszystko: skąd wziąć wizard, w jakiej kolejności iść
+    i czego pilnować, żebyś nie wystawił do internetu czegoś, czego nie chcesz.</p>
+    <div class="codeblock">
+      <div class="codebar"><span>Prompt · wklej do Claude Code</span><button class="copy-btn" data-copy="cb-prompt">Kopiuj prompt</button></div>
+      <pre id="cb-prompt">Sklonuj repozytorium https://github.com/Szewowsky/rakazo-vps.git do bieżącego katalogu,
+przeczytaj plik .claude/commands/rakazo-setup.md i przeprowadź mnie przez opisany tam wizard
+instalacji Rakazo na moim serwerze VPS - dokładnie według jego kolejności faz od F0 do F9
+i jego zasad bezpieczeństwa.
+
+Idź krok po kroku: czekaj na wynik każdej komendy i nie przechodź dalej, jeśli test fazy
+nie przeszedł. Zacznij od zebrania danych (Faza F0: adres serwera, użytkownik, domena,
+e-mail do certyfikatu), potem zrób audyt PRZED skryptem scripts/check.sh, następnie
+instalację, TLS, zamknięcie rejestracji i audyt PO.
+
+Nie zmieniaj mojej konfiguracji SSH ani reguł firewalla poza otwarciem portów 80 i 443.
+Nie wypisuj w czacie zawartości pliku .env ani żadnych sekretów. Na końcu pokaż mi
+zestawienie: co było na czerwono, a co jest teraz na zielono.</pre>
+    </div>
+    <p>Agent zapyta Cię o adres serwera, użytkownika, domenę i e-mail do certyfikatu. Odpowiadasz
+    normalnie, po ludzku - resztę robi sam.</p>
+  </div>
+</section>
+
+<section id="krok-3">
+  <div class="wrap">
+    <div class="step-tag">KROK 3 / 3</div>
+    <h2>Co się będzie działo (i gdzie masz coś do powiedzenia)</h2>
+    <p>Dziesięć faz. Przy trzech z nich agent się zatrzyma i zapyta - są oznaczone na pomarańczowo.</p>
+    <div class="flow">
+      <div class="flow-item">
+        <div class="flow-num">F0</div>
+        <div><h4>Dane i domena <span class="decyzja">Twoja decyzja</span></h4>
+        <p>Agent pyta o adres serwera, użytkownika SSH, wybraną domenę i e-mail, na który Let's Encrypt
+        wyśle ostrzeżenia o certyfikacie. Sprawdza też, czy rekord DNS faktycznie wskazuje na ten serwer -
+        jeśli nie, zatrzymuje się tutaj, zanim cokolwiek zainstaluje.</p></div>
+      </div>
+      <div class="flow-item">
+        <div class="flow-num">F1</div>
+        <div><h4>Połączenie i wymagania</h4>
+        <p>Logowanie po SSH, sprawdzenie systemu, wolnego miejsca i pamięci. Tu wychodzi prawda o tym,
+        czy 4 GB RAM wystarczy - agent powie Ci wprost, na ilu botach naraz utkniesz.</p></div>
+      </div>
+      <div class="flow-item">
+        <div class="flow-num">F2</div>
+        <div><h4>Audyt PRZED</h4>
+        <p>Skrypt <code class="inline">scripts/check.sh</code> odpalony na serwerze w trybie „przed".
+        Wszystko, co dopiero ma powstać - Docker, kontenery, certyfikat - jest wtedy żółte, a nie czerwone:
+        to punkt odniesienia, do którego wrócimy na końcu, a nie lista Twoich grzechów.</p></div>
+      </div>
+      <div class="flow-item">
+        <div class="flow-num">F3</div>
+        <div><h4>Docker</h4>
+        <p>Docker Engine plus wtyczka Compose, jeśli ich nie ma. Rakazo to kilka współpracujących
+        kontenerów - bez tego ani rusz.</p></div>
+      </div>
+      <div class="flow-item">
+        <div class="flow-num">F4</div>
+        <div><h4>Instalacja z gotowych obrazów</h4>
+        <p>Agent pobiera oficjalny instalator i uruchamia go w trybie przygotowania. Nic się jeszcze nie
+        startuje - powstaje tylko plik <code class="inline">.env</code> z wylosowanymi sekretami, gotowy
+        do edycji. Żadnego kompilowania, obrazy są gotowe - trzeba je tylko ściągnąć, 6,8 GB,
+        u mnie 2-3 minuty.</p></div>
+      </div>
+      <div class="flow-item">
+        <div class="flow-num">F5</div>
+        <div><h4>Konfiguracja pod Twój adres</h4>
+        <p>Agent wpisuje Twoją domenę w cztery miejsca w <code class="inline">.env</code> (adres publiczny
+        dla logowania, dla przeglądarki, dla API i sama nazwa hosta), ustawia limit pamięci dla komputerów
+        botów pod wielkość Twojego serwera, a potem dopiero startuje stack. Listy dozwolonych adresów
+        e-mail <strong>celowo nie ustawia</strong> - w tej wersji Rakazo włącza ona potwierdzanie adresu
+        mailem, a instalacja nie ma skąd tego maila wysłać.</p></div>
+      </div>
+      <div class="flow-item">
+        <div class="flow-num">F6</div>
+        <div><h4>HTTPS przez Caddy'ego</h4>
+        <p>Panel Rakazo słucha wyłącznie na pętli lokalnej serwera - z internetu nie da się do niego
+        dobić bezpośrednio. Przed nim staje Caddy, który sam wyrabia certyfikat Let's Encrypt i przepuszcza
+        ruch. Cztery linijki konfiguracji, zero klikania po panelach. Na koniec agent puka nie tylko
+        w stronę, ale i w samo API - bo strona odpowiada „200" nawet wtedy, gdy backend leży.</p></div>
+      </div>
+      <div class="flow-item">
+        <div class="flow-num">F7</div>
+        <div><h4>Pierwsze konto i zamknięcie drzwi <span class="decyzja">Twoja decyzja</span></h4>
+        <p>Wchodzisz na swój adres i rejestrujesz się. <strong>Pierwszy zarejestrowany użytkownik zostaje
+        właścicielem instalacji</strong> - więc zrób to od razu, zanim ktokolwiek inny pozna adres.
+        Przez te kilka minut rejestracja jest otwarta dla każdego i to jest świadoma decyzja: alternatywa,
+        czyli lista dozwolonych adresów, zamyka Cię przed własnym kontem. Zaraz potem agent wyłącza
+        rejestrację i sprawdza, że obcy e-mail dostaje odmowę. Nie rób w tym miejscu przerwy na kawę.</p></div>
+      </div>
+      <div class="flow-item">
+        <div class="flow-num">F8</div>
+        <div><h4>Podpięcie modelu <span class="decyzja">Twoja decyzja</span></h4>
+        <p>Albo klucz OpenRouter w <code class="inline">.env</code>, albo logowanie kontem ChatGPT/Codex
+        w panelu. Agent zapyta, którą drogę wybierasz, i sprawdzi, czy model odpowiada.</p></div>
+      </div>
+      <div class="flow-item">
+        <div class="flow-num">F9</div>
+        <div><h4>Audyt PO i pierwszy bot</h4>
+        <p>Ten sam skrypt jeszcze raz, tym razem na zielono. Na koniec agent zakłada pierwszego bota
+        i zleca mu zadanie, które wymaga otwarcia przeglądarki - żebyś zobaczył, jak jego komputer
+        naprawdę startuje.</p></div>
+      </div>
+    </div>
+    <div class="note">
+      <p><strong>Przy każdej ryzykownej zmianie agent zatrzymuje się i pyta.</strong> Jeśli jakaś faza
+      się wysypie, nie brnie dalej na ślepo - pokazuje błąd i czeka na Ciebie. Tak jest napisany wizard.</p>
+    </div>
+  </div>
+</section>
+
+<section id="werdykt">
+  <div class="wrap">
+    <div class="step-tag">SPRAWDŹ, CZY ZADZIAŁAŁO</div>
+    <h2>Czerwone ma być zielone</h2>
+    <p>Audyt odpalasz sam, kiedy chcesz - to zwykły skrypt, który tylko czyta i niczego nie zmienia:</p>
+    <div class="codeblock">
+      <div class="codebar"><span>Serwer · terminal</span><button class="copy-btn" data-copy="cb2">Kopiuj</button></div>
+      <pre id="cb2">bash scripts/check.sh --before   # przed instalacją
+bash scripts/check.sh            # po instalacji</pre>
+    </div>
+    <p>Dziewięć pozycji. Tak wyglądają przed instalacją i tak mają wyglądać po niej:</p>
+    <div class="tabela-wrap">
+      <table>
+        <thead>
+          <tr><th>Co sprawdzamy</th><th>Przed</th><th>Po</th><th>Dlaczego to ważne</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Docker i Compose</td>
+            <td class="stan t-warn">[WARN]</td>
+            <td class="stan t-pass">[PASS]</td>
+            <td>Bez silnika kontenerów nic nie wystartuje. Przed instalacją to żółty, nie czerwony - Docker jest po prostu jeszcze do zrobienia.</td>
+          </tr>
+          <tr>
+            <td>Porty 80 i 443 otwarte i wolne</td>
+            <td class="stan t-warn">[WARN]</td>
+            <td class="stan t-pass">[PASS]</td>
+            <td>Let's Encrypt puka na 80, użytkownicy wchodzą na 443. Skrypt sprawdza też, czy ktoś już na nich nie siedzi - jeśli masz na serwerze inny serwer WWW, dowiesz się o tym tutaj, a nie w połowie instalacji.</td>
+          </tr>
+          <tr>
+            <td>Port 5173 tylko lokalnie</td>
+            <td class="stan t-dim">[n/d]</td>
+            <td class="stan t-pass">[PASS]</td>
+            <td>Panel ma być widoczny wyłącznie przez Caddy'ego. Gdyby wisiał na publicznym adresie, ktoś wszedłby do niego bez szyfrowania, z pominięciem certyfikatu.</td>
+          </tr>
+          <tr>
+            <td>Kontenery w stanie healthy</td>
+            <td class="stan t-dim">[n/d]</td>
+            <td class="stan t-pass">[PASS]</td>
+            <td>Baza, API, worker i panel muszą stać wszystkie naraz.</td>
+          </tr>
+          <tr>
+            <td>Adres HTTPS odpowiada 200</td>
+            <td class="stan t-fail">[FAIL]</td>
+            <td class="stan t-pass">[PASS]</td>
+            <td>Certyfikat wydany, domena działa, aplikacje się połączą.</td>
+          </tr>
+          <tr>
+            <td>Rejestracja zamknięta</td>
+            <td class="stan t-fail">[FAIL]</td>
+            <td class="stan t-pass">[PASS]</td>
+            <td>Adres jest publiczny. Otwarta rejestracja to zaproszenie dla przypadkowych osób do Twoich botów i Twoich tokenów.</td>
+          </tr>
+          <tr>
+            <td>Uprawnienia pliku <code class="inline">.env</code> = 600</td>
+            <td class="stan t-dim">[n/d]</td>
+            <td class="stan t-pass">[PASS]</td>
+            <td>W środku są wszystkie sekrety i klucz szyfrujący. Czyta go tylko właściciel.</td>
+          </tr>
+          <tr>
+            <td>Wolne miejsce na dysku</td>
+            <td class="stan t-warn">[WARN]</td>
+            <td class="stan t-pass">[PASS]</td>
+            <td>Obrazy plus komputery botów potrafią urosnąć. Poniżej kilku GB zapasu zaczynają się dziwne błędy.</td>
+          </tr>
+          <tr>
+            <td>Wolna pamięć RAM</td>
+            <td class="stan t-warn">[WARN]</td>
+            <td class="stan t-pass">[PASS]</td>
+            <td>Każdy aktywny komputer bota to 1-2 GB. Ten wiersz mówi Ci, ilu botów naraz utrzymasz.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Cztery szybkie testy własnoręczne, dla spokoju ducha (podmień dane na swoje):</p>
+    <div class="codeblock">
+      <div class="codebar"><span>Twój komputer i serwer · terminal</span><button class="copy-btn" data-copy="cb3">Kopiuj</button></div>
+      <pre id="cb3"># 1. adres odpowiada po HTTPS (z Twojego komputera):
+curl -I https://rakazo.twojadomena.pl
+
+# 2. odpowiada nie tylko strona, ale i samo API:
+curl -s https://rakazo.twojadomena.pl/api/auth/ok
+
+# 3. wszystkie kontenery stoją, łącznie z zakończonymi (na serwerze, z katalogu instalacji):
+docker compose --env-file .env -f docker-compose.images.yml ps -a
+
+# 4. panel NIE wisi na publicznym adresie (na serwerze):
+ss -tlnp | grep 5173</pre>
+    </div>
+    <p>Pierwsza komenda ma zwrócić <span class="t-pass" style="font-family:var(--mono)">200</span>,
+    druga dokładnie <span class="t-pass" style="font-family:var(--mono)">{"ok":true}</span>,
+    trzecia pięć usług w stanie <span class="t-pass" style="font-family:var(--mono)">running</span>
+    i dwie <span class="t-dim" style="font-family:var(--mono)">exited</span> (to zadania jednorazowe,
+    tak ma być), a czwarta ma pokazać adres
+    <span class="t-pass" style="font-family:var(--mono)">127.0.0.1:5173</span> - i tylko taki.
+    Druga komenda jest ważniejsza, niż wygląda: panel oddaje tę samą stronę na każdy adres, więc
+    <span class="t-pass" style="font-family:var(--mono)">200</span> dostaniesz nawet wtedy, gdy backend
+    leży. Jeśli w czwartej zobaczysz <span class="t-fail" style="font-family:var(--mono)">0.0.0.0:5173</span>,
+    panel jest wystawiony do internetu z pominięciem HTTPS. Wtedy stop i napraw to, zanim pójdziesz dalej.</p>
+  </div>
+</section>
+
+<section id="pierwszy-bot">
+  <div class="wrap">
+    <div class="step-tag">CO DALEJ</div>
+    <h2>Po instalacji: pierwszy bot</h2>
+    <p>Stack stoi, konto masz, drzwi zamknięte. Teraz właściwa część zabawy - to, po co w ogóle
+    stawiałeś ten serwer.</p>
+    <div class="flow">
+      <div class="flow-item">
+        <div class="flow-num">01</div>
+        <div><h4>Załóż bota</h4>
+        <p>W panelu tworzysz nowego bota: nazwa, opis tego, czym się zajmuje, i model z listy. Opis to
+        nie ozdobnik - bot naprawdę się nim kieruje, więc napisz konkretnie, co ma robić i czego nie ruszać.</p></div>
+      </div>
+      <div class="flow-item">
+        <div class="flow-num">02</div>
+        <div><h4>Otwórz jego komputer</h4>
+        <p>Na stronie bota jest przycisk pokazujący pulpit (<strong>Open computer</strong> / <strong>Show
+        computer</strong>). Kontener startuje dopiero, gdy bot sięga po narzędzia graficzne - zadania
+        czysto tekstowe go nie budzą. Chcesz zobaczyć pulpit od razu? Poproś bota o otwarcie konkretnej
+        strony w przeglądarce, a ekran ożyje. Przyciskiem <strong>Take control</strong> przejmujesz
+        klawiaturę i mysz, na przykład żeby raz zalogować go do jakiegoś serwisu.</p></div>
+      </div>
+      <div class="flow-item">
+        <div class="flow-num">03</div>
+        <div><h4>Pierwsza rutyna</h4>
+        <p>Rutyna to zadanie o stałej porze - codziennie o 07:00 sprawdź coś i napisz mi raport. Zacznij
+        od czegoś nudnego i weryfikowalnego, na przykład przegląd nowości z jednej strony. Rutyna
+        odpalona przez harmonogram działa dokładnie tak samo, jak zadanie zlecone ręcznie - a Ty od razu
+        widzisz, czy bot rozumie polecenie.</p></div>
+      </div>
+      <div class="flow-item">
+        <div class="flow-num">04</div>
+        <div><h4>Gdzie są raporty</h4>
+        <p>Bot odpowiada w swoim wątku w panelu - tam lądują wyniki rutyn i tam do niego piszesz.
+        Nie każ mu "zapisywać raportu do pliku" na starcie: prosta odpowiedź w wątku jest pewniejsza
+        i od razu ją widzisz.</p></div>
+      </div>
+      <div class="flow-item">
+        <div class="flow-num">05</div>
+        <div><h4>Pilnuj pamięci</h4>
+        <p>Komputer bota gaśnie sam po dziesięciu minutach bezczynności. Jeśli mimo to serwer zaczyna
+        dyszeć, sprawdź <code class="inline">free -h</code> i rozstaw rutyny w czasie zamiast puszczać
+        trzy o tej samej godzinie.</p></div>
+      </div>
+    </div>
+    <div class="note">
+      <p><strong>Serwer nie idzie spać razem z Tobą.</strong> To jest cała różnica między botem
+      na własnym VPS-ie a agentem odpalonym na laptopie: zamykasz klapę, a rutyna o 07:00 i tak się
+      wykona. Do panelu wejdziesz z przeglądarki, z aplikacji desktopowej albo z telefonu - wszystkie
+      łączą się z tym samym adresem HTTPS.</p>
+    </div>
+  </div>
+</section>
+
+<section id="potkniecia">
+  <div class="wrap">
+    <div class="step-tag">POTKNIĘCIA</div>
+    <h2>Zjedzone za Ciebie</h2>
+    <p>Rzeczy, na których sam się przyciąłem, żebyś Ty nie musiał. Każda z objawem, przyczyną i tym,
+    co robisz:</p>
+    <details class="droga" id="p-allowlist">
+    <summary><span class="d-num">01</span> Założyłem konto i nie mogę się na nie zalogować</summary>
+    <div class="d-body">
+      <p><strong>Objaw:</strong> rejestracja przechodzi, ale zamiast panelu widzisz prośbę o kliknięcie
+      w link wysłany na e-mail. Mail nie przychodzi. W spamie też go nie ma, bo nigdy nie wyszedł.</p>
+      <p><strong>Przyczyna:</strong> w <code class="inline">.env</code> jest wpisana lista dozwolonych
+      adresów (<code class="inline">SIGNUP_ALLOWLIST</code>). Wygląda to na rozsądne zabezpieczenie -
+      wpuszczam tylko siebie - ale w aktualnej wersji Rakazo niepusta lista włącza jednocześnie wymóg
+      potwierdzenia adresu mailem. Instalacja z tego poradnika nie ma skonfigurowanej poczty wychodzącej,
+      więc czekasz na link, którego nikt nie wysłał.</p>
+      <p><strong>Co robisz:</strong> czyścisz listę, restartujesz trzy usługi i rejestrujesz się jeszcze
+      raz - a zaraz potem zamykasz rejestrację, tak jak w Kroku 3.</p>
+      <div class="codeblock">
+        <div class="codebar"><span>Serwer · terminal</span><button class="copy-btn" data-copy="cb-allow">Kopiuj</button></div>
+        <pre id="cb-allow">cd ~/rakazo
+sed -i "s|^SIGNUP_ALLOWLIST=.*|SIGNUP_ALLOWLIST=|" .env
+docker compose --env-file .env -f docker-compose.images.yml up -d api worker web</pre>
+      </div>
+      <p>Bezpieczeństwo bierze się tutaj nie z listy adresów, tylko z tego, że rejestracja jest otwarta
+      przez kilka minut i wyłączona na stałe zaraz po tym, jak założysz konto.</p>
+    </div>
+    </details>
+
+    <details class="droga" id="p-composio">
+    <summary><span class="d-num">02</span> Klucz do integracji nie działa, choć jest poprawny</summary>
+    <div class="d-body">
+      <p><strong>Objaw:</strong> podpinasz Composio (to przez niego bot dostaje dostęp do GitHuba,
+      YouTube'a i reszty), klucz wygląda dobrze, a połączenie i tak jest odrzucane.</p>
+      <p><strong>Przyczyna:</strong> Composio ma dwa rodzaje kluczy i wyglądają niemal identycznie.
+      Rakazo potrzebuje klucza zaczynającego się od <code class="inline">ak_</code> - tego z trybu
+      PLATFORM. Klucz zaczynający się od <code class="inline">ck_</code> jest z innego trybu i nie zadziała,
+      niezależnie od tego, ile razy go wkleisz.</p>
+      <p><strong>Co robisz:</strong> wróć do panelu Composio, przełącz się na tryb PLATFORM i wygeneruj
+      klucz stamtąd. Sprawdzenie zajmuje sekundę - patrzysz na dwa pierwsze znaki.</p>
+    </div>
+    </details>
+
+    <details class="droga" id="p-autoreview">
+    <summary><span class="d-num">03</span> Bot wisi i czeka na Twoją zgodę przy każdym ruchu</summary>
+    <div class="d-body">
+      <p><strong>Objaw:</strong> zlecasz botowi zadanie, a on przy pierwszej poważniejszej czynności
+      staje i prosi o potwierdzenie. Potem przy następnej. I następnej. Rutyna o 07:00 rano nie robi
+      nic, bo nikt nie kliknął "zgoda".</p>
+      <p><strong>Przyczyna:</strong> Rakazo ma automatycznego recenzenta, który ocenia, czy dana czynność
+      jest bezpieczna. Domyślnie daje mu na to <strong>1,5 sekundy</strong>. Żaden model się w tym nie
+      mieści, więc recenzent milczy, a decyzja spada na człowieka.</p>
+      <p><strong>Co robisz:</strong> wskaż recenzentowi szybki model i daj mu sensowny czas. Trzy linijki
+      w pliku <code class="inline">.env</code>, potem restart stacku:</p>
+      <div class="codeblock">
+        <div class="codebar"><span>.env · na serwerze</span><button class="copy-btn" data-copy="cb4">Kopiuj</button></div>
+        <pre id="cb4">RAKAZO_AUTO_REVIEW_PROVIDER=openrouter
+RAKAZO_AUTO_REVIEW_MODEL=google/gemini-3.1-flash-lite
+RAKAZO_AUTO_REVIEW_TIMEOUT_MS=30000</pre>
+      </div>
+      <p>Od tej pory szybki i tani model ocenia czynności w tle, a Ciebie bot pyta tylko wtedy,
+      gdy naprawdę jest o co pytać.</p>
+    </div>
+    </details>
+
+    <details class="droga" id="p-singleton">
+    <summary><span class="d-num">04</span> Przeglądarka bota nie chce wstać po nagłym padzie</summary>
+    <div class="d-body">
+      <p><strong>Objaw:</strong> kontener komputera się wywalił albo serwer został zrestartowany
+      w trakcie pracy bota. Po ponownym starcie pulpit jest, ale Chromium nie rusza.</p>
+      <p><strong>Przyczyna:</strong> Chromium zostawia w profilu plik-blokadę, żeby dwie kopie nie
+      pisały po tych samych danych. Przy czystym zamknięciu sam go sprząta. Przy nagłym padzie plik
+      zostaje i blokuje kolejne uruchomienie.</p>
+      <p><strong>Co robisz:</strong> usuwasz blokadę w katalogu domowym komputera bota i uruchamiasz
+      go ponownie:</p>
+      <div class="codeblock">
+        <div class="codebar"><span>Wewnątrz komputera bota</span><button class="copy-btn" data-copy="cb5">Kopiuj</button></div>
+        <pre id="cb5">rm -f "$HOME/.browser-profiles/chromium/SingletonLock" \
+      "$HOME/.browser-profiles/chromium/SingletonCookie" \
+      "$HOME/.browser-profiles/chromium/SingletonSocket"</pre>
+      </div>
+      <p>Nic nie tracisz - to są pliki tymczasowe, nie Twoje zalogowane sesje.</p>
+    </div>
+    </details>
+
+    <details class="droga" id="p-sesja">
+    <summary><span class="d-num">05</span> „Ekran zajęty przez nowszą sesję"</summary>
+    <div class="d-body">
+      <p><strong>Objaw:</strong> otwierasz pulpit bota i zamiast obrazu dostajesz komunikat, że ekran
+      przejęła nowsza sesja. Klikanie w kółko nic nie daje.</p>
+      <p><strong>Przyczyna:</strong> pulpit ma jednego posiadacza naraz. Jeśli otworzyłeś go
+      w przeglądarce, potem w aplikacji desktopowej, a wcześniejsza karta nie zamknęła się porządnie,
+      instalacja wciąż uważa tamtą sesję za żywą.</p>
+      <p><strong>Co robisz:</strong> w panelu przy komputerze bota użyj <strong>Recover computer</strong>.
+      To odbiera zawieszoną dzierżawę ekranu i przywraca ostatni zapisany stan pulpitu. Uprzedzenie:
+      niezapisana robota z tamtej sesji może przepaść, więc nie klikaj tego w środku ważnego zadania.</p>
+    </div>
+    </details>
+
+    <details class="droga" id="p-ps">
+    <summary><span class="d-num">06</span> Brakuje mi dwóch kontenerów na liście</summary>
+    <div class="d-body">
+      <p><strong>Objaw:</strong> liczysz kontenery i wychodzi pięć, a instrukcja mówi o siedmiu.
+      Pierwsza myśl: coś się nie uruchomiło.</p>
+      <p><strong>Przyczyna:</strong> dwa z nich to zadania jednorazowe - jedno pobiera obraz pulpitu,
+      drugie ustawia właściciela katalogu z danymi. Kończą się poprawnie i przechodzą w stan zakończony,
+      a lista domyślnie pokazuje tylko to, co aktualnie działa.</p>
+      <p><strong>Co robisz:</strong> dopisujesz <code class="inline">-a</code>. Pięć linii zamiast
+      siedmiu to poprawny wynik, nie brak.</p>
+      <div class="codeblock">
+        <div class="codebar"><span>Serwer · terminal</span><button class="copy-btn" data-copy="cb6">Kopiuj</button></div>
+        <pre id="cb6">cd ~/rakazo
+docker compose --env-file .env -f docker-compose.images.yml ps -a</pre>
+      </div>
+    </div>
+    </details>
+
+    <details class="droga" id="p-pull">
+    <summary><span class="d-num">07</span> Instalacja stoi i nic się nie dzieje</summary>
+    <div class="d-body">
+      <p><strong>Objaw:</strong> instalator wisi kilka minut bez widocznego postępu. Kusi, żeby
+      przerwać i spróbować jeszcze raz.</p>
+      <p><strong>Przyczyna:</strong> ściąga <strong>6,8 GB</strong> obrazów. Na łączu hostingu schodzi
+      to w 2-3 minuty, na wolniejszym w kwadrans. To nie jest zawieszenie, to po prostu duży plik.</p>
+      <p><strong>Co robisz:</strong> z drugiego terminala patrzysz, czy coś przybywa. Jeśli po kwadransie
+      nadal cisza - przerywasz i powtarzasz instalator. Zachowa istniejący
+      <code class="inline">.env</code> i dociągnie tylko brakujące warstwy.</p>
+      <div class="codeblock">
+        <div class="codebar"><span>Serwer · drugi terminal</span><button class="copy-btn" data-copy="cb7">Kopiuj</button></div>
+        <pre id="cb7">docker images | grep rakazo
+df -h /</pre>
+      </div>
+    </div>
+    </details>
+
+    <details class="droga" id="p-debconf">
+    <summary><span class="d-num">08</span> Instalacja pakietu wisi w nieskończoność</summary>
+    <div class="d-body">
+      <p><strong>Objaw:</strong> instalacja pakietu stoi, a w logu przewijają się komunikaty
+      o niemożności otwarcia okna konfiguracyjnego. Nic się nie dzieje ani przez minutę, ani przez pięć.</p>
+      <p><strong>Przyczyna:</strong> pakiet chce zadać pytanie w okienku, którego w sesji SSH nie ma.
+      Czeka na odpowiedź, której nigdy nie dostanie, i po drodze blokuje mechanizm instalacji pakietów
+      dla wszystkiego innego.</p>
+      <p><strong>Co robisz:</strong> ubijasz zawieszony proces, porządkujesz to, co zostało w połowie,
+      i powtarzasz instalację z przedrostkiem, który mówi „nie zadawaj pytań".</p>
+      <div class="codeblock">
+        <div class="codebar"><span>Serwer · terminal</span><button class="copy-btn" data-copy="cb8">Kopiuj</button></div>
+        <pre id="cb8">sudo pkill -f apt-get
+sudo dpkg --configure -a --force-confdef --force-confold
+sudo DEBIAN_FRONTEND=noninteractive apt-get install -y NAZWA_PAKIETU</pre>
+      </div>
+      <p>Ten przedrostek dawaj przy każdej instalacji pakietów, nie tylko przy naprawie.
+      Wizard robi to za Ciebie.</p>
+    </div>
+    </details>
+
+    <details class="droga" id="p-update">
+    <summary><span class="d-num">09</span> „Dostępna aktualizacja" przy komputerze bota, która nic nie znaczy</summary>
+    <div class="d-body">
+      <p><strong>Objaw:</strong> przy komputerze bota wisi informacja o dostępnej aktualizacji.
+      Klikasz, coś się dzieje, komunikat wraca.</p>
+      <p><strong>Przyczyna:</strong> w wersjach do początku września to pole było zapalone praktycznie
+      zawsze, niezależnie od stanu obrazu - czyli był to szum, nie sygnał. W nowszych wersjach zastąpiło
+      je pole opisujące, czy aktualizacja jest w ogóle możliwa, i wtedy komunikat już coś znaczy.</p>
+      <p><strong>Co robisz:</strong> na starszym obrazie po prostu ignorujesz. Na nowszym pamiętaj,
+      że odświeżenie komputera bota <strong>tworzy kontener od nowa</strong> - katalog domowy jest
+      zapisywany i przywracany, ale to nie jest operacja za darmo. Nie klikaj tego w oknie, w którym
+      mają się odpalić rutyny.</p>
+    </div>
+    </details>
+
+    <details class="droga" id="p-worker">
+    <summary><span class="d-num">10</span> Zadanie wisi w połowie i nigdy się nie kończy</summary>
+    <div class="d-body">
+      <p><strong>Objaw:</strong> rutyna albo zlecone zadanie zostało w stanie „w trakcie",
+      a w wątku nic nie przybywa.</p>
+      <p><strong>Przyczyna:</strong> usługa wykonująca zadania została zrestartowana w trakcie pracy.
+      Zadanie zostaje wtedy osierocone - nikt go już nie dokończy, bo ten, kto je prowadził, przestał
+      istnieć.</p>
+      <p><strong>Co robisz:</strong> zaglądasz w logi, żeby się upewnić, i odpalasz rutynę ponownie
+      przyciskiem <strong>Run now</strong>. Na przyszłość: restartuj usługi wtedy, gdy nic nie leci,
+      a nie w środku okna rutyn.</p>
+      <div class="codeblock">
+        <div class="codebar"><span>Serwer · terminal</span><button class="copy-btn" data-copy="cb9">Kopiuj</button></div>
+        <pre id="cb9">docker logs rakazo-worker-1 --tail 60</pre>
+      </div>
+    </div>
+    </details>
+
+    <details class="droga" id="p-oom">
+    <summary><span class="d-num">11</span> Bot ginie w środku zadania, bez błędu</summary>
+    <div class="d-body">
+      <p><strong>Objaw:</strong> komputer bota znika w połowie pracy. W logach nie ma żadnego sensownego
+      wyjaśnienia - po prostu koniec.</p>
+      <p><strong>Przyczyna:</strong> komputer bota ma twardy sufit pamięci, domyślnie 2 GB.
+      Pulpit, menedżer okien i przeglądarka z kilkoma kartami potrafią go przekroczyć, a wtedy system
+      ubija kontener bez ostrzeżenia.</p>
+      <p><strong>Co robisz:</strong> na serwerze 8 GB podnosisz sufit do 4 GB. Na 4 GB raczej odciążasz
+      bota - jedno zadanie naraz, mniej kart - bo 4 GB dla komputera nie zmieści się obok reszty.</p>
+      <div class="codeblock">
+        <div class="codebar"><span>Serwer · terminal</span><button class="copy-btn" data-copy="cb10">Kopiuj</button></div>
+        <pre id="cb10">cd ~/rakazo
+grep -q '^RAKAZO_COMPUTER_MEMORY=' .env \
+  &amp;&amp; sed -i "s|^RAKAZO_COMPUTER_MEMORY=.*|RAKAZO_COMPUTER_MEMORY=4g|" .env \
+  || echo 'RAKAZO_COMPUTER_MEMORY=4g' &gt;&gt; .env
+docker compose --env-file .env -f docker-compose.images.yml up -d supervisor</pre>
+      </div>
+      <p>Format to <code class="inline">4g</code> albo <code class="inline">1536m</code>.
+      Wpisanie <code class="inline">4GB</code> wywali usługę przy starcie i zablokuje całe uruchomienie.</p>
+    </div>
+    </details>
+
+    <div class="note">
+      <p><strong>Nie ma Twojego objawu na liście?</strong> Wklej treść błędu agentowi w tej samej sesji,
+      w której robiłeś instalację - on ma cały kontekst Twojego serwera i najczęściej diagnozuje
+      to szybciej, niż znajdziesz odpowiedź w internecie.</p>
+    </div>
+  </div>
+</section>
+
+<section id="cta" style="border-bottom:0">
+  <div class="wrap">
+    <div class="cta-box">
+      <div>
+        <h3 style="margin-top:0">Nie masz jeszcze VPS-a?</h3>
+        <p style="margin-bottom:0">Cały ten poradnik zaczyna się od serwera. Ja swoje trzymam u Hostingera -
+        to partner technologiczny kanału, więc z kodem <span class="code-pill">ROBERTHOST</span> dostajesz
+        dodatkowy rabat, a ja małą prowizję. Sprzęt bez zmian, cena niższa.</p>
+      </div>
+      <a class="cta-btn" href="https://hostinger.com/robertclaude">Postaw serwer →</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <h2>Materiały i licencje</h2>
+    <div class="links">
+      <a href="https://youtube.com/@robert_szewczyk">Odcinek na YouTube</a>
+      <a href="https://github.com/Szewowsky/rakazo-vps">Repo: wizard + skrypt audytu</a>
+      <a href="https://szewowsky.github.io/vps-security/">Krok zero: zabezpiecz VPS</a>
+      <a href="https://github.com/elie222/rakazo">Rakazo (projekt oryginalny)</a>
+    </div>
+    <p>Materiał towarzyszący do odcinka o stawianiu Rakazo na własnym serwerze.
+    Wizard i skrypt audytu z tego repozytorium są na licencji MIT - skrypt audytu tylko czyta,
+    można go odpalać wielokrotnie bez szkody. Samo Rakazo to osobny projekt
+    (<a href="https://github.com/elie222/rakazo">elie222/rakazo</a>) na licencji Apache 2.0 -
+    ten poradnik nie jest z nim w żaden sposób powiązany ani przez niego firmowany.
+    Testuj na świeżym serwerze, zanim użyjesz na produkcji.</p>
+  </div>
+</footer>
+
+<script>
+  function fallbackCopy(text){
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    var ok = false;
+    try { ok = document.execCommand('copy'); } catch(e) {}
+    document.body.removeChild(ta);
+    return ok;
+  }
+  document.querySelectorAll('.copy-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var el = document.getElementById(btn.dataset.copy);
+      if (!el) return;
+      var text = el.tagName === 'SCRIPT' ? el.textContent.trim() : el.innerText;
+      var mark = function(ok){
+        var old = btn.textContent;
+        btn.textContent = ok ? 'Skopiowane ✓' : 'Zaznacz i skopiuj ręcznie';
+        if (ok) btn.classList.add('done');
+        setTimeout(function(){ btn.textContent = old; btn.classList.remove('done'); }, 1800);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function(){ mark(true); },
+          function(){ mark(fallbackCopy(text)); });
+      } else {
+        mark(fallbackCopy(text));
+      }
+    });
+  });
+</script>
+
+</body>
+</html>

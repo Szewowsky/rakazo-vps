@@ -1,0 +1,18 @@
+# Sekrety - nigdy nie commitować
+.env
+.env.*
+!.env.example
+*.bak
+*.bak-*
+env.bak
+
+# Backupy i dane
+backups/
+*.sql
+*.tar.gz
+
+# Systemowe
+.DS_Store
+*.swp
+*.swo
+*~
