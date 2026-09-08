@@ -266,14 +266,17 @@ To okno na kilka minut, nie stan docelowy. Zrób ten krok od razu po Kroku 5, ni
 ```
 cd ~/rakazo
 nano .env      # zmień SIGNUPS_ENABLED=true na SIGNUPS_ENABLED=false
+docker exec rakazo-postgres-1 psql -U rakazo -d rakazo -c "update deployment_settings set \"signupsEnabled\"=false, \"signupAllowlist\"='' where id='default';"
 docker compose --env-file .env -f docker-compose.images.yml up -d api worker web
 ```
+
+Druga linia jest konieczna: po pierwszym uruchomieniu polityka rejestracji żyje w bazie, a `.env`
+jest tylko wartością startową. Sama zmiana pliku nie zamknie drzwi.
 
 Test: otwórz stronę w oknie incognito i spróbuj założyć konto na inny adres. Powinieneś dostać
 komunikat, że rejestracja jest zamknięta.
 
-⚠️ Jeśli nadal się da - wyłącz rejestrację również w ustawieniach w UI. Zmienna w `.env` działa
-tylko jako wartość startowa; po pierwszym uruchomieniu rządzą ustawienia właściciela.
+⚠️ Jeśli nadal się da - wyłącz rejestrację również w ustawieniach właściciela w UI.
 
 ---
 
