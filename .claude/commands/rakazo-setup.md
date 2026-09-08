@@ -498,10 +498,16 @@ weryfikacją maila). To jest okno kilku minut, nie stan docelowy - zrób ten kro
 set -euo pipefail
 cd ~/rakazo
 sed -i "s|^SIGNUPS_ENABLED=.*|SIGNUPS_ENABLED=false|" .env
+# Po pierwszym starcie polityka rejestracji zyje w bazie (deployment_settings) i .env jest tylko
+# seedem - dlatego zamykamy w obu miejscach naraz.
+docker exec rakazo-postgres-1 psql -U rakazo -d rakazo -At -c "update deployment_settings set \"signupsEnabled\"=false, \"signupAllowlist\"='' where id='default' returning \"signupsEnabled\""
 docker compose --env-file .env -f docker-compose.images.yml up -d api worker web
 sleep 10
 grep -E '^SIGNUPS_ENABLED=' .env
+curl -s -o /dev/null -w "signup:%{http_code}\n" -X POST https://DOMENA/api/auth/sign-up/email -H "Content-Type: application/json" -H "Origin: https://DOMENA" -d '{"email":"obcy@example.com","password":"Test12345678!","name":"x"}'
 ```
+
+Oczekiwany wynik: `f` z bazy, `SIGNUPS_ENABLED=false` z pliku i `signup:400` z API.
 
 **Test zaliczenia:** próba rejestracji drugiego, obcego maila kończy się komunikatem
 o zamkniętej rejestracji (`Registration is closed`).
@@ -509,11 +515,13 @@ Poproś użytkownika, żeby sprawdził to w oknie incognito.
 
 **FAIL - co zrobić:**
 - rejestracja prosi o **potwierdzenie adresu e-mail** i nic nie przychodzi → w `.env` jest niepusta
-  `SIGNUP_ALLOWLIST`. Wyczyść ją (`sed -i "s|^SIGNUP_ALLOWLIST=.*|SIGNUP_ALLOWLIST=|" .env`),
+  `SIGNUP_ALLOWLIST` albo allowlista zapisała się już w bazie przy pierwszym starcie. Wyczyść ją
+  w obu miejscach: `sed -i "s|^SIGNUP_ALLOWLIST=.*|SIGNUP_ALLOWLIST=|" .env` oraz
+  `docker exec rakazo-postgres-1 psql -U rakazo -d rakazo -c "update deployment_settings set \"signupAllowlist\"='' where id='default';"`,
   zrestartuj `api worker web` i zarejestruj się jeszcze raz. Instalacja z tego wizarda nie ma SMTP,
   więc mail weryfikacyjny nigdy nie dotrze.
-- rejestracja nadal otwarta → zmienna z `.env` jest tylko **seedem**; po inicjalizacji rządzą
-  ustawienia ownera w UI. Zajrzyj do Settings deploymentu i wyłącz signupy również tam.
+- rejestracja nadal otwarta → skrypt wyżej zamyka ją w bazie; jeśli mimo to `signup` zwraca 200,
+  zajrzyj do Settings deploymentu w UI i wyłącz signupy również tam.
 - ktoś inny zdążył się zarejestrować pierwszy → to poważne. Najprościej: zatrzymać stack,
   skasować wolumen `rakazo_pgdata` i zacząć od Fazy 3c (**skasuje wszystkie dane**,
   ale na tym etapie nie ma jeszcze czego tracić). `ENCRYPTION_KEY` w `.env` zostaw bez zmian.
