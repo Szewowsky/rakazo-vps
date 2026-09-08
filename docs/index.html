@@ -274,7 +274,11 @@
       fail2ban.</li>
       <li><strong>Domena albo subdomena wskazująca na serwer.</strong> Rekord <code class="inline">A</code>
       typu <code class="inline">rakazo.twojadomena.pl</code> → adres IP VPS-a. Bez tego nie będzie HTTPS,
-      a bez HTTPS aplikacje desktopowa i mobilna się nie zalogują.</li>
+      a bez HTTPS aplikacje desktopowa i mobilna się nie zalogują. <strong>Nie masz domeny?</strong> Użyj
+      nazwy, którą serwer dostał od hostingu - na Hostingerze to
+      <code class="inline">srvNNNNNN.hstgr.cloud</code> (widać ją w hPanelu jako hostname). Rekord A już
+      istnieje, Let's Encrypt ją wystawia, zero konfiguracji. Adres jest brzydki i przypięty do tej
+      konkretnej maszyny, więc na start w sam raz, docelowo lepsza własna subdomena.</li>
       <li><strong>Claude Code na Twoim komputerze.</strong> Agent działa lokalnie i to on łączy się
       z serwerem po SSH.</li>
       <li><strong>Konto do modelu.</strong> Najprościej <strong>OpenRouter</strong> (klucz API, płacisz

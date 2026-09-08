@@ -29,7 +29,7 @@ Wróć, gdy audyt z tamtego repo świeci na zielono.
 | RAM | 4 GB (każdy aktywny bot-komputer zjada 1-2 GB) |
 | Dysk | 10 GB wolnego |
 | Porty | 80 i 443 wolne i przepuszczone przez UFW |
-| Domena | subdomena z rekordem A na IP serwera (do HTTPS) |
+| Domena | subdomena z rekordem A na IP serwera (do HTTPS); bez własnej domeny wystarczy nazwa od hostingu, np. `srvNNNNNN.hstgr.cloud` |
 
 ## Quick Start
 

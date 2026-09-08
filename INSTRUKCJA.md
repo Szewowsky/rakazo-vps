@@ -106,6 +106,11 @@ Instalator pobrał pliki i stworzył `.env` z **losowo wygenerowanymi hasłami**
 **Po co?** Rakazo domyślnie myśli, że działa na Twoim laptopie. Musi wiedzieć, pod jakim adresem
 będzie widoczny w internecie - inaczej zobaczysz biały ekran.
 
+Potrzebujesz nazwy DNS wskazującej na serwer (rekord A), np. `rakazo.twojadomena.pl`. Nie masz domeny?
+Użyj nazwy, którą serwer dostał od hostingu - na Hostingerze to `srvNNNNNN.hstgr.cloud` (hostname
+w hPanelu). Rekord A już istnieje i Let's Encrypt ją wystawia. Minus: adres jest przypięty do tej
+maszyny, więc przy zmianie serwera zmieni się też adres w aplikacji desktopowej i na telefonie.
+
 Otwórz plik:
 
 ```
