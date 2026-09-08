@@ -402,6 +402,23 @@ bash /tmp/check.sh
 
 Teraz powinno być dużo więcej zielonego. Masz własny zespół botów na własnym serwerze.
 
+### Aplikacja na komputer (opcjonalnie)
+
+Panel działa w przeglądarce, ale możesz mieć go jako osobną aplikację:
+
+1. Wejdź na https://github.com/elie222/rakazo/releases/latest
+2. **macOS:** pobierz `Rakazo-x.y.z-universal.dmg` (jeden plik na Intel i Apple Silicon, podpisany
+   i notaryzowany, więc Gatekeeper nie marudzi), otwórz, przeciągnij do Aplikacji.
+   **Linux:** pobierz `.AppImage`, `chmod +x`, uruchom.
+   **Windows:** oficjalnej instalki jeszcze nie ma (brak certyfikatu podpisu po stronie projektu).
+   Zostań przy przeglądarce - Chrome → menu → "Zainstaluj stronę jako aplikację" daje osobne okno.
+3. Na ekranie powitalnym wybierz **Existing instance** i wpisz `https://twoja-domena`.
+   NIE wybieraj "This computer" - to stawia osobną instalację Rakazo na Twoim laptopie
+   (z Dockerem), zamiast łączyć się z serwerem.
+4. Zaloguj się tym samym kontem co w przeglądarce.
+
+Telefon: ten sam adres w przeglądarce, aplikacji mobilnej nie ma.
+
 ---
 
 ## Coś poszło nie tak?

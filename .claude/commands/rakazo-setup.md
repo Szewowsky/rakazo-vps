@@ -741,6 +741,26 @@ Dokładny układ ekranów zależy od wersji obrazu - poszukaj sekcji z sekretami
 przestrzeni roboczej albo w ustawieniach bota. Klucze z sejfu **nie trafiają do `.env`**, więc backup
 z 9a ich nie obejmuje - to osobna rzecz do odtworzenia po katastrofie.
 
+### 9c2. Aplikacja desktop (opcjonalnie, robi użytkownik)
+
+Powiedz użytkownikowi, że panel ma też wersję na komputer i **nie instaluj jej za niego**:
+
+- Pobranie: https://github.com/elie222/rakazo/releases/latest - macOS `Rakazo-x.y.z-universal.dmg`
+  (podpisany, notaryzowany), Linux `.AppImage`. **Windows: brak oficjalnej instalki** (stan na
+  2026-09) - użytkownik zostaje przy przeglądarce (Chrome "Zainstaluj jako aplikację").
+- Na ekranie powitalnym: **Existing instance** + `https://DOMENA`. Ostrzeż wprost: opcja
+  **"This computer"** stawia drugą, lokalną instalację Rakazo na laptopie użytkownika (ciągnie
+  obrazy Dockera), nie łączy się z serwerem.
+- Loguje się tym samym kontem, które założył w Fazie 5.
+
+**Test zaliczenia:** aplikacja pokazuje tę samą listę botów co przeglądarka.
+
+**FAIL - co zrobić:**
+- "cannot connect" / biały ekran → adres musi być dokładnie ten z `WEB_ORIGIN` (https, bez
+  końcowego ukośnika). Aplikacja nie zaloguje się po http ani po samym IP.
+- macOS blokuje otwarcie → przy oficjalnym DMG nie powinno się zdarzyć; jeśli użytkownik pobrał
+  build spoza strony wydań, niech wróci do oficjalnego pliku zamiast wyłączać Gatekeepera.
+
 ### 9d. Audyt PO
 
 ```bash
