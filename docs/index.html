@@ -355,57 +355,44 @@ zestawienie: co było na czerwono, a co jest teraz na zielono.</pre>
     <div class="flow">
       <div class="flow-item">
         <div class="flow-num">F0</div>
-        <div><h4>Dane i domena <span class="decyzja">Twoja decyzja</span></h4>
-        <p>Agent pyta o adres serwera, użytkownika SSH, wybraną domenę i e-mail, na który Let's Encrypt
-        wyśle ostrzeżenia o certyfikacie. Sprawdza też, czy rekord DNS faktycznie wskazuje na ten serwer -
-        jeśli nie, zatrzymuje się tutaj, zanim cokolwiek zainstaluje.</p></div>
+        <div><h4>Zbierz dane <span class="decyzja">Twoja decyzja</span></h4>
+        <p>Agent pyta o adres serwera, użytkownika i port SSH, wybraną domenę i e-mail, na który Let's
+        Encrypt wyśle ostrzeżenia o certyfikacie. Rekord A tej nazwy musi już wskazywać na ten serwer -
+        jeśli nie wskazuje, agent zatrzymuje się tutaj, zanim cokolwiek zainstaluje.</p></div>
       </div>
       <div class="flow-item">
         <div class="flow-num">F1</div>
-        <div><h4>Połączenie i wymagania</h4>
-        <p>Logowanie po SSH, sprawdzenie systemu, wolnego miejsca i pamięci. Tu wychodzi prawda o tym,
-        czy 4 GB RAM wystarczy - agent powie Ci wprost, na ilu botach naraz utkniesz.</p></div>
+        <div><h4>Test SSH i wymagania serwera</h4>
+        <p>Najpierw logowanie po SSH i sprawdzenie sudo, potem skrypt <code class="inline">scripts/check.sh</code>
+        w trybie „przed". Wszystko, co dopiero ma powstać - Docker, kontenery, certyfikat - jest wtedy żółte,
+        a nie czerwone: to punkt odniesienia, do którego wrócimy na końcu.</p></div>
       </div>
       <div class="flow-item">
         <div class="flow-num">F2</div>
-        <div><h4>Audyt PRZED</h4>
-        <p>Skrypt <code class="inline">scripts/check.sh</code> odpalony na serwerze w trybie „przed".
-        Wszystko, co dopiero ma powstać - Docker, kontenery, certyfikat - jest wtedy żółte, a nie czerwone:
-        to punkt odniesienia, do którego wrócimy na końcu, a nie lista Twoich grzechów.</p></div>
-      </div>
-      <div class="flow-item">
-        <div class="flow-num">F3</div>
-        <div><h4>Docker</h4>
+        <div><h4>Docker Engine i Compose</h4>
         <p>Docker Engine plus wtyczka Compose, jeśli ich nie ma. Rakazo to kilka współpracujących
         kontenerów - bez tego ani rusz.</p></div>
       </div>
       <div class="flow-item">
+        <div class="flow-num">F3</div>
+        <div><h4>Instalacja z gotowych obrazów i <code class="inline">.env</code></h4>
+        <p>Agent pobiera oficjalny instalator, wpisuje Twoją domenę w cztery miejsca w
+        <code class="inline">.env</code> (adres publiczny dla logowania, dla przeglądarki, dla API i samą
+        nazwę hosta) i dopiero wtedy startuje stack. Żadnego kompilowania, obrazy są gotowe - trzeba je
+        tylko ściągnąć, 6,8 GB, u mnie 2-3 minuty. Listy dozwolonych adresów e-mail <strong>celowo nie
+        ustawia</strong> - w tej wersji Rakazo włącza ona potwierdzanie adresu mailem, a instalacja nie ma
+        skąd tego maila wysłać.</p></div>
+      </div>
+      <div class="flow-item">
         <div class="flow-num">F4</div>
-        <div><h4>Instalacja z gotowych obrazów</h4>
-        <p>Agent pobiera oficjalny instalator i uruchamia go w trybie przygotowania. Nic się jeszcze nie
-        startuje - powstaje tylko plik <code class="inline">.env</code> z wylosowanymi sekretami, gotowy
-        do edycji. Żadnego kompilowania, obrazy są gotowe - trzeba je tylko ściągnąć, 6,8 GB,
-        u mnie 2-3 minuty.</p></div>
+        <div><h4>HTTPS przez Caddy'ego</h4>
+        <p>Panel Rakazo słucha wyłącznie na pętli lokalnej serwera - z internetu nie da się do niego dobić
+        bezpośrednio. Agent otwiera w firewallu tylko 80 i 443, stawia przed panelem Caddy'ego, który sam
+        wyrabia certyfikat Let's Encrypt, a potem sprawdza, że nic poza tym nie wycieka na świat. Na koniec
+        puka nie tylko w stronę, ale i w samo API - bo strona odpowiada „200" nawet wtedy, gdy backend leży.</p></div>
       </div>
       <div class="flow-item">
         <div class="flow-num">F5</div>
-        <div><h4>Konfiguracja pod Twój adres</h4>
-        <p>Agent wpisuje Twoją domenę w cztery miejsca w <code class="inline">.env</code> (adres publiczny
-        dla logowania, dla przeglądarki, dla API i sama nazwa hosta), ustawia limit pamięci dla komputerów
-        botów pod wielkość Twojego serwera, a potem dopiero startuje stack. Listy dozwolonych adresów
-        e-mail <strong>celowo nie ustawia</strong> - w tej wersji Rakazo włącza ona potwierdzanie adresu
-        mailem, a instalacja nie ma skąd tego maila wysłać.</p></div>
-      </div>
-      <div class="flow-item">
-        <div class="flow-num">F6</div>
-        <div><h4>HTTPS przez Caddy'ego</h4>
-        <p>Panel Rakazo słucha wyłącznie na pętli lokalnej serwera - z internetu nie da się do niego
-        dobić bezpośrednio. Przed nim staje Caddy, który sam wyrabia certyfikat Let's Encrypt i przepuszcza
-        ruch. Cztery linijki konfiguracji, zero klikania po panelach. Na koniec agent puka nie tylko
-        w stronę, ale i w samo API - bo strona odpowiada „200" nawet wtedy, gdy backend leży.</p></div>
-      </div>
-      <div class="flow-item">
-        <div class="flow-num">F7</div>
         <div><h4>Pierwsze konto i zamknięcie drzwi <span class="decyzja">Twoja decyzja</span></h4>
         <p>Wchodzisz na swój adres i rejestrujesz się. <strong>Pierwszy zarejestrowany użytkownik zostaje
         właścicielem instalacji</strong> - więc zrób to od razu, zanim ktokolwiek inny pozna adres.
@@ -414,17 +401,31 @@ zestawienie: co było na czerwono, a co jest teraz na zielono.</pre>
         rejestrację i sprawdza, że obcy e-mail dostaje odmowę. Nie rób w tym miejscu przerwy na kawę.</p></div>
       </div>
       <div class="flow-item">
-        <div class="flow-num">F8</div>
+        <div class="flow-num">F6</div>
         <div><h4>Podpięcie modelu <span class="decyzja">Twoja decyzja</span></h4>
-        <p>Albo klucz OpenRouter w <code class="inline">.env</code>, albo logowanie kontem ChatGPT/Codex
-        w panelu. Agent zapyta, którą drogę wybierasz, i sprawdzi, czy model odpowiada.</p></div>
+        <p>Albo klucz OpenRouter, albo logowanie OAuth kontem dostawcy - w obu wypadkach wklejasz go sam,
+        w panelu, żeby nie przechodził przez czat. Agent zapyta, którą drogę wybierasz, i sprawdzi, czy
+        model odpowiada.</p></div>
+      </div>
+      <div class="flow-item">
+        <div class="flow-num">F7</div>
+        <div><h4>Test komputera bota</h4>
+        <p>Agent zleca botowi zadanie, które wymaga otwarcia przeglądarki - żebyś zobaczył, jak jego
+        komputer naprawdę startuje. Kontener budzi się dopiero przy narzędziach graficznych, samo pisanie
+        wiadomości go nie rusza.</p></div>
+      </div>
+      <div class="flow-item">
+        <div class="flow-num">F8</div>
+        <div><h4>Pierwszy bot z rutyną</h4>
+        <p>Rutyna to zadanie o stałej porze, na przykład poranny przegląd jednej strony z linkami.
+        Agent nie każe Ci czekać do rana - odpala ją ręcznie, żebyś od razu zobaczył wynik w wątku bota.</p></div>
       </div>
       <div class="flow-item">
         <div class="flow-num">F9</div>
-        <div><h4>Audyt PO i pierwszy bot</h4>
-        <p>Ten sam skrypt jeszcze raz, tym razem na zielono. Na koniec agent zakłada pierwszego bota
-        i zleca mu zadanie, które wymaga otwarcia przeglądarki - żebyś zobaczył, jak jego komputer
-        naprawdę startuje.</p></div>
+        <div><h4>Backup, aktualizacje i audyt PO</h4>
+        <p>Kopia wolumenów i <code class="inline">.env</code>, komendy do aktualizacji obrazów i wskazanie
+        sejfu sekretów w panelu, do którego wpisujesz klucze do zewnętrznych API. Na koniec ten sam skrypt
+        audytu jeszcze raz, tym razem na zielono.</p></div>
       </div>
     </div>
     <div class="note">
