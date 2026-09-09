@@ -720,16 +720,25 @@ RAKAZO_AUTO_REVIEW_TIMEOUT_MS=30000</pre>
     </details>
 
     <details class="droga" id="p-sesja">
-    <summary><span class="d-num">05</span> „Ekran zajęty przez nowszą sesję"</summary>
+    <summary><span class="d-num">05</span> „Computer is busy" na stałe, Recover nie pomaga</summary>
     <div class="d-body">
-      <p><strong>Objaw:</strong> otwierasz pulpit bota i zamiast obrazu dostajesz komunikat, że ekran
-      przejęła nowsza sesja. Klikanie w kółko nic nie daje.</p>
-      <p><strong>Przyczyna:</strong> pulpit ma jednego posiadacza naraz. Jeśli otworzyłeś go
-      w przeglądarce, potem w aplikacji desktopowej, a wcześniejsza karta nie zamknęła się porządnie,
-      instalacja wciąż uważa tamtą sesję za żywą.</p>
-      <p><strong>Co robisz:</strong> w panelu przy komputerze bota użyj <strong>Recover computer</strong>.
-      To odbiera zawieszoną dzierżawę ekranu i przywraca ostatni zapisany stan pulpitu. Uprzedzenie:
-      niezapisana robota z tamtej sesji może przepaść, więc nie klikaj tego w środku ważnego zadania.</p>
+      <p><strong>Objaw:</strong> pulpit bota jest czarny albo widzisz, że ekran przejęła nowsza sesja.
+      W menu komputera świeci „Computer is busy", a <strong>Recover computer</strong> i <strong>Reset
+      computer</strong> odpowiadają tym samym komunikatem. Zadanie bota dawno się skończyło.</p>
+      <p><strong>Przyczyna A (najczęstsza):</strong> to Ty trzymasz sterowanie. Po „Take control"
+      Twoja karta przedłuża dzierżawę co kilkadziesiąt sekund, a Recover i Reset odmawiają, dopóki
+      ktoś trzyma mysz i klawiaturę. Czarny obraz to uchwyt ekranu z poprzedniej sesji podglądu.
+      <strong>Przyczyna B (bug Rakazo, stan na wrzesień 2026):</strong> po „Take control" instalacja
+      zakłada dzierżawę komputera na 24 godziny i nie zwalnia jej po zakończeniu zadania bota.
+      Poprawka jest zgłoszona do autorów.</p>
+      <p><strong>Co robisz:</strong> wyłącz „Take control" albo zamknij panel ekranu i odczekaj
+      minutę, przeładuj stronę i kliknij Open computer - w wariancie A to zwykle wystarcza. Nadal
+      czarno? Teraz Recover computer przejdzie. Dalej „busy"? Upewnij się, że bot nie ma naprawdę
+      trwającego zadania (Stop w wątku), potem skrypt z repo, <code class="inline">scripts/unlock-computer.sh</code>, uruchomiony
+      na serwerze - pokazuje dzierżawy, pyta o zgodę, usuwa tylko te po zakończonych zadaniach
+      i zeruje zawieszone sterowanie. Ostateczność, gdy ekran dalej czarny: <code class="inline">docker stop</code> kontenera komputera bota, supervisor
+      postawi nowy przy następnym użyciu. Pliki bota w <code class="inline">shared/</code> zostają.
+      Agent w wizardzie ma tę procedurę w Fazie 7.</p>
     </div>
     </details>
 

@@ -645,6 +645,23 @@ ssh -p PORT USER@IP "docker ps --format '{{.Names}}\t{{.Status}}' | grep -E 'rak
   potem `SANDBOX_IDLE_MS` w dół albo mniej botów naraz.
 - **Po 10 minutach bezczynności komputer gaśnie** (`SANDBOX_IDLE_MS=600000`) - to nie awaria.
   Kolejne zadanie graficzne obudzi go z powrotem.
+- **"Computer is busy" / "ekran zajęty przez nowszą sesję" / czarny ekran, a Recover computer
+  i Reset computer też mówią "busy"** → dwie możliwe przyczyny, sprawdzaj w tej kolejności:
+  (A) użytkownik sam trzyma sterowanie ("You have control"): Recover/Reset odmawiają, dopóki
+  `controlHolder='user'`. Każ użytkownikowi wyłączyć "Take control" albo zamknąć panel ekranu,
+  odczekać minutę, przeładować stronę (Cmd+Shift+R) i kliknąć "Open computer" - stary uchwyt ekranu
+  z poprzedniej sesji podglądu daje 403 i czarny obraz, świeży zwykle działa. Potem Recover przejdzie.
+  (B) zawieszona dzierżawa wykonania (bug upstreamu, stan 2026-09: po "Take control" dzierżawa
+  żyje 24 h i nie znika po końcu zadania). Diagnoza bez zmian: `select "controlHolder" from computers;`
+  oraz `select count(*) from computer_execution_leases;` przez `docker exec rakazo-postgres-1 psql`.
+  Upewnij się, że bot nie ma naprawdę trwającego zadania (Stop w wątku). Potem skrypt z repo:
+  ```bash
+  scp -P PORT scripts/unlock-computer.sh USER@IP:/tmp/unlock-computer.sh
+  ssh -p PORT USER@IP "bash /tmp/unlock-computer.sh"
+  ```
+  Skrypt pokazuje dzierżawy, pyta o zgodę, usuwa tylko te po zakończonych zadaniach i zeruje
+  zawieszone sterowanie. Potem przeładowanie strony i "Open computer". Ostateczność: `docker stop`
+  kontenera `rakazo-bot-...` - supervisor postawi nowy przy następnym użyciu, pliki w `shared/` zostają.
 
 ---
 

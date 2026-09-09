@@ -18,6 +18,7 @@ Wróć, gdy audyt z tamtego repo świeci na zielono.
 
 - **Wizard dla Claude Code** - 10 faz (F0-F9, plus opcjonalna F6b: aplikacje przez Composio), każda z komendą, oczekiwanym wynikiem, testem zaliczenia i planem B
 - **Skrypt audytu** - `scripts/check.sh` sprawdza serwer PRZED i PO instalacji, PASS/WARN/FAIL per punkt
+- **Odblokowanie komputera bota** - `scripts/unlock-computer.sh` gdy panel mówi "Computer is busy", a Recover nie pomaga
 - **Instrukcja tekstowa** - `INSTRUKCJA.md` dla tych, którzy wolą kopiować komendy ręcznie
 
 ## Wymagania

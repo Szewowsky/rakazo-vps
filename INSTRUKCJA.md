@@ -497,18 +497,44 @@ rm -f "$HOME/.browser-profiles/chromium/SingletonLock" \
 
 Nic nie tracisz - to pliki tymczasowe, nie Twoje zalogowane sesje.
 
-### 5. "Ekran zajęty przez nowszą sesję"
+### 5. "Ekran zajęty przez nowszą sesję" / "Computer is busy" na stałe
 
-**Objaw:** otwierasz pulpit bota i dostajesz komunikat, że ekran przejęła nowsza sesja.
-Klikanie w kółko nic nie daje.
+**Objaw:** pulpit bota jest czarny albo dostajesz komunikat, że ekran przejęła nowsza sesja.
+W menu komputera świeci "Computer is busy", a **Recover computer** i **Reset computer** odpowiadają
+tym samym "Computer is busy". Zadanie bota dawno się skończyło.
 
-**Przyczyna:** pulpit ma jednego posiadacza naraz. Otworzyłeś go w przeglądarce, potem w aplikacji
-desktopowej, a wcześniejsza karta nie zamknęła się porządnie - instalacja wciąż uważa tamtą sesję
-za żywą.
+**Przyczyna, wariant A (najczęstszy):** to Ty trzymasz sterowanie. Po "Take control" Twoja karta
+przedłuża dzierżawę sterowania co kilkadziesiąt sekund, a Recover i Reset odmawiają, dopóki ktoś
+trzyma mysz i klawiaturę. Czarny obraz bierze się z tego, że panel trzyma uchwyt ekranu z poprzedniej
+sesji podglądu.
 
-**Co robisz:** w panelu przy komputerze bota użyj **Recover computer**. To odbiera zawieszoną
-dzierżawę ekranu i przywraca ostatni zapisany stan pulpitu. Niezapisana robota z tamtej sesji
-może przepaść, więc nie klikaj tego w środku ważnego zadania.
+**Przyczyna, wariant B (bug Rakazo, stan na wrzesień 2026):** po "Take control" instalacja zakłada
+dzierżawę komputera na 24 godziny i nie zwalnia jej po zakończeniu zadania bota. Poprawka jest
+zgłoszona do autorów.
+
+**Co robisz:**
+
+1. Wyłącz "Take control" (oddaj sterowanie) albo zamknij panel ekranu i odczekaj minutę.
+2. Przeładuj stronę (Cmd+Shift+R) i kliknij **Open computer**. W wariancie A to zwykle wystarcza.
+3. Nadal czarno? Teraz **Recover computer** przejdzie, bo nikt nie trzyma sterowania.
+4. Dalej "busy"? Upewnij się, że bot nie ma naprawdę trwającego zadania (Stop w wątku),
+   a potem na serwerze:
+
+```bash
+bash unlock-computer.sh
+```
+
+(skrypt z tego repo, `scripts/unlock-computer.sh`; skopiuj go na serwer przez `scp`). Pokazuje
+dzierżawy, pyta o zgodę, usuwa tylko te po zakończonych zadaniach i zeruje zawieszone sterowanie.
+Potem przeładuj panel i kliknij **Open computer**. Ostateczność, gdy ekran nadal czarny:
+
+```bash
+docker ps --format '{{.Names}}' | grep -v '^rakazo-'    # kontener komputera bota
+docker stop NAZWA_KONTENERA                              # supervisor postawi nowy przy następnym użyciu
+```
+
+Pliki bota w `shared/` zostają. Niezapisana robota w otwartych oknach przepada, więc nie rób tego
+w środku ważnego zadania.
 
 ### 6. Brakuje mi dwóch kontenerów na liście
 
