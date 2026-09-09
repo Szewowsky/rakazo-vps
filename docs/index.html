@@ -832,6 +832,27 @@ sudo DEBIAN_FRONTEND=noninteractive apt-get install -y NAZWA_PAKIETU</pre>
     </div>
     </details>
 
+    <details class="droga" id="p-czarny">
+    <summary><span class="d-num">12</span> Pulpit bota czarny, bez żadnego komunikatu</summary>
+    <div class="d-body">
+      <p><strong>Objaw:</strong> Open computer otwiera panel, obraz jest czarny, nic nie mówi, że coś
+      jest nie tak. W kontenerze bota przeglądarka żyje. W logu Caddy
+      (<code class="inline">sudo journalctl -u caddy -n 50</code>) wpisy <code class="inline">502</code> /
+      <code class="inline">EOF</code> dla <code class="inline">GET /novnc/session/...</code>, w których
+      <code class="inline">/novnc/session/</code> występuje <strong>dwa razy</strong> w jednym adresie.</p>
+      <p><strong>Przyczyna:</strong> bug Rakazo od 8 września 2026 (zmiana „Revoke screen capabilities",
+      #822). Strona ekranu składa adres WebSocketu z katalogu strony i parametru
+      <code class="inline">path</code>, a od tej zmiany parametr sam zawiera pełny prefiks. Prefiks się
+      dubluje, websockify dostaje nieistniejącą ścieżkę i zrywa połączenie. Instalacje sprzed 8 września
+      tego nie mają - dlatego na produkcji z filmu działa, a na świeżej nie.</p>
+      <p><strong>Co robisz:</strong> jedna linia w <code class="inline">/etc/caddy/Caddyfile</code>, w bloku
+      domeny, przed <code class="inline">reverse_proxy</code>:</p>
+      <pre id="cb12">uri path_regexp ^(/novnc/session/(?:view|control)/[^/]+)/novnc/session/(?:view|control)/[^/]+(/.*)$ $1$2</pre>
+      <p>Potem <code class="inline">sudo systemctl reload caddy</code>, przeładowanie panelu i Open computer.
+      Wizard wpisuje tę linię sam w fazie F4. Po poprawce w upstreamie linia jest nieszkodliwa.</p>
+    </div>
+    </details>
+
     <details class="droga" id="p-oom">
     <summary><span class="d-num">11</span> Bot ginie w środku zadania, bez błędu</summary>
     <div class="d-body">

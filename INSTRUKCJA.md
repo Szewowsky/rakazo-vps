@@ -226,9 +226,17 @@ Wyczyść zawartość i wpisz (swoją domenę i swój e-mail):
 }
 
 rakazo.twojadomena.pl {
+	# Obejście buga Rakazo (upstream, od 2026-09-08): strona ekranu bota dubluje prefiks
+	# uchwytu w adresie WebSocketu -> czarny pulpit. Zwijamy powtórzony prefiks.
+	# Nieszkodliwe po poprawce w upstreamie.
+	uri path_regexp ^(/novnc/session/(?:view|control)/[^/]+)/novnc/session/(?:view|control)/[^/]+(/.*)$ $1$2
+
 	reverse_proxy 127.0.0.1:5173
 }
 ```
+
+Linia `uri path_regexp` to obejście buga Rakazo (patrz "Coś poszło nie tak?", punkt 12). Bez niej pulpit
+bota jest czarny. Po poprawce w upstreamie można ją usunąć, ale nie szkodzi.
 
 Zapisz i przeładuj:
 
@@ -634,6 +642,28 @@ docker compose --env-file .env -f docker-compose.images.yml up -d supervisor
 Format musi być `4g` albo `1536m`. Wpisanie `4GB` wywali usługę przy starcie.
 
 ---
+
+### 12. Pulpit bota czarny, bez komunikatu, "Recover" nic nie zmienia
+
+**Objaw:** Open computer otwiera panel, ale obraz jest czarny. Żadnego błędu. W kontenerze bota
+przeglądarka działa (`docker exec <rakazo-bot-...> ps aux | grep -c chromium` > 0). W logu Caddy
+(`sudo journalctl -u caddy -n 50`) wpisy `502` / `EOF` dla `GET /novnc/session/...`, w których
+`/novnc/session/` występuje **dwa razy** w jednym adresie.
+
+**Przyczyna:** bug Rakazo od 2026-09-08 (zmiana "Revoke screen capabilities", #822). Strona ekranu
+bota składa adres WebSocketu z katalogu strony i parametru `path`, a od tej zmiany parametr sam
+zawiera pełny prefiks. Prefiks się dubluje, websockify dostaje nieistniejącą ścieżkę i zrywa
+połączenie. Instalacje sprzed 8 września (np. produkcja z tego filmu) tego nie mają.
+
+**Co robisz:** w `/etc/caddy/Caddyfile`, w bloku swojej domeny, PRZED `reverse_proxy` dopisz:
+
+```
+	uri path_regexp ^(/novnc/session/(?:view|control)/[^/]+)/novnc/session/(?:view|control)/[^/]+(/.*)$ $1$2
+```
+
+potem `sudo caddy validate --config /etc/caddy/Caddyfile && sudo systemctl reload caddy`, przeładuj
+panel (Cmd+Shift+R) i kliknij Open computer. Krok 5 tej instrukcji ma tę linię już wpisaną.
+Po poprawce w upstreamie linia jest nieszkodliwa.
 
 Materiał towarzyszący do filmu: [Robert Szewczyk](https://youtube.com/@robert_szewczyk)
 

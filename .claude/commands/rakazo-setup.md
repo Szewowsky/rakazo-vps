@@ -410,6 +410,11 @@ sudo tee /etc/caddy/Caddyfile > /dev/null <<'CADDYEOF'
 }
 
 DOMENA {
+	# Obejście buga Rakazo (upstream, od 2026-09-08): strona ekranu bota dubluje prefiks
+	# uchwytu w adresie WebSocketu -> czarny pulpit. Zwijamy powtórzony prefiks.
+	# Nieszkodliwe po poprawce w upstreamie.
+	uri path_regexp ^(/novnc/session/(?:view|control)/[^/]+)/novnc/session/(?:view|control)/[^/]+(/.*)$ $1$2
+
 	reverse_proxy 127.0.0.1:5173
 }
 CADDYEOF
@@ -645,6 +650,14 @@ ssh -p PORT USER@IP "docker ps --format '{{.Names}}\t{{.Status}}' | grep -E 'rak
   potem `SANDBOX_IDLE_MS` w dół albo mniej botów naraz.
 - **Po 10 minutach bezczynności komputer gaśnie** (`SANDBOX_IDLE_MS=600000`) - to nie awaria.
   Kolejne zadanie graficzne obudzi go z powrotem.
+- **Pulpit czarny, ale bez żadnego komunikatu; `docker exec <kontener rakazo-bot-...> ps` pokazuje
+  żywe Xvfb/x11vnc/Chromium; `sudo journalctl -u caddy` ma wpisy `502` / `EOF` dla `GET /novnc/session/...`
+  z URI, w którym `/novnc/session/` występuje DWA razy** → bug upstreamu z 2026-09-08 (uchwyt ekranu
+  dubluje prefiks w adresie WebSocketu). Obejście to linia `uri path_regexp` w Caddyfile z Fazy 4c.
+  Jeśli jej brakuje (starsza wersja tego wizarda albo ręczna instalacja) - dopisz ją i `sudo systemctl
+  reload caddy`. Test bez przeglądarki: weź URI z logu Caddy i `curl -s --http1.1 -o /dev/null -w '%{http_code}'
+  -H 'Upgrade: websocket' -H 'Connection: Upgrade' -H 'Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ=='
+  -H 'Sec-WebSocket-Version: 13' https://DOMENA<URI>` → oczekiwane `101`.
 - **"Computer is busy" / "ekran zajęty przez nowszą sesję" / czarny ekran, a Recover computer
   i Reset computer też mówią "busy"** → dwie możliwe przyczyny, sprawdzaj w tej kolejności:
   (A) użytkownik sam trzyma sterowanie ("You have control"): Recover/Reset odmawiają, dopóki

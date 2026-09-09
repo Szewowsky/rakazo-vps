@@ -12,6 +12,8 @@
 #     24 h i nie znika po zakończeniu zadania bota.
 # Uruchomienie na serwerze:  bash unlock-computer.sh            (pokaż + zapytaj)
 #                            bash unlock-computer.sh --yes      (bez pytania)
+#                            bash unlock-computer.sh --hard     (+ zatrzymaj kontener komputera,
+#                              supervisor postawi świeży przy następnym "Open computer")
 # Nie dotyka aktywnych zadań: usuwa tylko dzierżawy po zakończonych runach.
 # =============================================================================
 set -euo pipefail
@@ -30,9 +32,15 @@ STALE=$(psql "select count(*) from computer_execution_leases l join runs r on r.
 CTRL=$(psql "select count(*) from computers where \"controlHolder\"<>'none';")
 echo "Zawieszone dzierżawy po zakończonych zadaniach: $STALE, przejęte sterowanie: $CTRL"
 if [[ "$STALE" == "0" && "$CTRL" == "0" ]]; then echo "Nic do zwolnienia. Jeśli komputer nadal 'busy', zadanie bota naprawdę trwa - zatrzymaj je w panelu."; exit 0; fi
-if [[ "${1:-}" != "--yes" ]]; then read -rp "Zwolnić? (tak/nie) [nie]: " OK; [[ "${OK:-nie}" == "tak" ]] || exit 0; fi
+HARD=0; YES=0
+for a in "$@"; do [[ "$a" == "--hard" ]] && HARD=1; [[ "$a" == "--yes" ]] && YES=1; done
+if [[ "$YES" == "0" ]]; then read -rp "Zwolnić? (tak/nie) [nie]: " OK; [[ "${OK:-nie}" == "tak" ]] || exit 0; fi
 psql "delete from computer_execution_leases where \"runId\" in (select id from runs where status in ('completed','failed','cancelled'));" >/dev/null
 psql "update computers set \"controlHolder\"='none', \"controlLeaseId\"=null, \"controlLeaseExpiresAt\"=null, \"controlBotId\"=null where \"controlHolder\"<>'none';" >/dev/null
+if [[ "$HARD" == "1" ]]; then
+  for c in $(docker ps --format '{{.Names}}' | grep -E 'rakazo-bot'); do docker stop "$c" >/dev/null && echo "Zatrzymany kontener komputera: $c"; done
+  psql "update computers set state='stopped';" >/dev/null
+fi
 echo "Zwolnione. Przeładuj panel (Cmd+Shift+R) i kliknij Open computer."
 echo "Jeśli ekran nadal czarny: teraz Recover computer w panelu przejdzie. Ostateczność:"
 docker ps --format '  docker stop {{.Names}}' | grep -E 'rakazo-bot' || echo "  (brak kontenera komputera bota)"
