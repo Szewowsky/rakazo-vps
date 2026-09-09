@@ -650,7 +650,8 @@ przeglądarka działa (`docker exec <rakazo-bot-...> ps aux | grep -c chromium` 
 (`sudo journalctl -u caddy -n 50`) wpisy `502` / `EOF` dla `GET /novnc/session/...`, w których
 `/novnc/session/` występuje **dwa razy** w jednym adresie.
 
-**Przyczyna:** bug Rakazo od 2026-09-08 (zmiana "Revoke screen capabilities", #822). Strona ekranu
+**Przyczyna:** bug Rakazo od 2026-09-08 (zmiana "Revoke screen capabilities", #822; zgłoszenie:
+https://github.com/elie222/rakazo/issues/832). Strona ekranu
 bota składa adres WebSocketu z katalogu strony i parametru `path`, a od tej zmiany parametr sam
 zawiera pełny prefiks. Prefiks się dubluje, websockify dostaje nieistniejącą ścieżkę i zrywa
 połączenie. Instalacje sprzed 8 września (np. produkcja z tego filmu) tego nie mają.

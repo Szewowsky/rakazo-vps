@@ -841,7 +841,7 @@ sudo DEBIAN_FRONTEND=noninteractive apt-get install -y NAZWA_PAKIETU</pre>
       <code class="inline">EOF</code> dla <code class="inline">GET /novnc/session/...</code>, w których
       <code class="inline">/novnc/session/</code> występuje <strong>dwa razy</strong> w jednym adresie.</p>
       <p><strong>Przyczyna:</strong> bug Rakazo od 8 września 2026 (zmiana „Revoke screen capabilities",
-      #822). Strona ekranu składa adres WebSocketu z katalogu strony i parametru
+      #822, zgłoszenie <a href="https://github.com/elie222/rakazo/issues/832">#832</a>). Strona ekranu składa adres WebSocketu z katalogu strony i parametru
       <code class="inline">path</code>, a od tej zmiany parametr sam zawiera pełny prefiks. Prefiks się
       dubluje, websockify dostaje nieistniejącą ścieżkę i zrywa połączenie. Instalacje sprzed 8 września
       tego nie mają - dlatego na produkcji z filmu działa, a na świeżej nie.</p>

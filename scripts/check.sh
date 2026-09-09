@@ -377,6 +377,17 @@ else
     warn "Caddy nie zainstalowany (audyt PRZED albo inny reverse proxy)"
 fi
 
+# Obejście buga Rakazo #832 (upstream, od 2026-09-08): bez tej linii pulpit bota jest czarny.
+if [[ -f /etc/caddy/Caddyfile ]]; then
+    if grep -q 'path_regexp .*novnc/session' /etc/caddy/Caddyfile 2>/dev/null; then
+        pass "Caddyfile: obejście czarnego pulpitu (uri path_regexp, Rakazo #832) obecne"
+    elif [[ "$BEFORE" == "1" ]]; then
+        warn "Caddyfile bez obejścia czarnego pulpitu - wizard doda je w Fazie 4c"
+    else
+        fail "Caddyfile bez obejścia czarnego pulpitu (Rakazo #832) - dopisz 'uri path_regexp' przed reverse_proxy (INSTRUKCJA, pkt 12)"
+    fi
+fi
+
 # --- Podsumowanie ---
 echo ""
 echo "╔══════════════════════════════════════════╗"

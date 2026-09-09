@@ -653,7 +653,7 @@ ssh -p PORT USER@IP "docker ps --format '{{.Names}}\t{{.Status}}' | grep -E 'rak
 - **Pulpit czarny, ale bez żadnego komunikatu; `docker exec <kontener rakazo-bot-...> ps` pokazuje
   żywe Xvfb/x11vnc/Chromium; `sudo journalctl -u caddy` ma wpisy `502` / `EOF` dla `GET /novnc/session/...`
   z URI, w którym `/novnc/session/` występuje DWA razy** → bug upstreamu z 2026-09-08 (uchwyt ekranu
-  dubluje prefiks w adresie WebSocketu). Obejście to linia `uri path_regexp` w Caddyfile z Fazy 4c.
+  dubluje prefiks w adresie WebSocketu; issue elie222/rakazo#832). Obejście to linia `uri path_regexp` w Caddyfile z Fazy 4c.
   Jeśli jej brakuje (starsza wersja tego wizarda albo ręczna instalacja) - dopisz ją i `sudo systemctl
   reload caddy`. Test bez przeglądarki: weź URI z logu Caddy i `curl -s --http1.1 -o /dev/null -w '%{http_code}'
   -H 'Upgrade: websocket' -H 'Connection: Upgrade' -H 'Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ=='

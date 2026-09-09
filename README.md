@@ -55,6 +55,10 @@ Nigdy nie wklejaj do czatu zawartości pliku .env.
 Agent zapyta Cię o dane serwera i domenę, a potem poprowadzi przez całość.
 Dokładna instrukcja krok po kroku (ze zrzutami i testami "czy zadziałało"): **[poradnik](https://szewowsky.github.io/rakazo-vps/)**.
 
+Masz **Codex** zamiast Claude Code? Ten sam prompt działa - Codex czyta `AGENTS.md` z repo,
+który wskazuje na ten sam wizard. Nie używaj `/rakazo-setup` (to komenda Claude Code), po prostu
+wklej prompt.
+
 ### Opcja B: Z Claude Code, ręcznie przez slash command
 
 ```bash
